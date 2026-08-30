@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <!-- Chosen Palette: Slate Navy & Multi-Theme Palette with Red Error Borders & Limited 3-Hint System -->
+    <!-- Application Structure Plan: Upgraded 9x9 Vocab Sudoku Web App featuring a 3-hint limit per match, immediate red-border error highlighting for incorrect entries, dual Android native TTS & online audio stream fallback, desktop grid top-alignment, and multi-language support. -->
+    <!-- Visualization & Content Choices: Dual tailwind CDN + native CSS fallbacks for standalone mobile compatibility. Chart.js & Canvas rendering. NO SVG. NO Mermaid JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Sudoku V2 - Learn Words. Solve Sudoku.</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        if (window.tailwind) {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- STYLES & RED ERROR BORDER FIXES -->
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root[data-theme="dark"], body[data-theme="dark"] {
+            --bg-main: #0b1120;
+            --bg-panel: #1e293b;
+            --bg-card: #0f172a;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --rule-box-bg: #1e293b;
+            --rule-box-border: #475569;
+            --rule-box-text: #f8fafc;
+            --rule-box-subtext: #cbd5e1;
+            --accent: #10b981;
+            --grid-cell-bg: #1e293b;
+            --grid-cell-selected: #2563eb;
+            --grid-cell-highlight: #1e3a8a;
+        }
+
+        :root[data-theme="light"], body[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-panel: #ffffff;
+            --bg-card: #f1f5f9;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #334155;
+            --rule-box-bg: #e2e8f0;
+            --rule-box-border: #94a3b8;
+            --rule-box-text: #0f172a;
+            --rule-box-subtext: #334155;
+            --accent: #2563eb;
+            --grid-cell-bg: #ffffff;
+            --grid-cell-selected: #93c5fd;
+            --grid-cell-highlight: #dbeafe;
+        }
+
+        :root[data-theme="pink"], body[data-theme="pink"] {
+            --bg-main: #fdf2f8;
+            --bg-panel: #ffffff;
+            --bg-card: #fce7f3;
+            --border-color: #f472b6;
+            --text-main: #831843;
+            --text-muted: #9d174d;
+            --rule-box-bg: #fbcfe8;
+            --rule-box-border: #f472b6;
+            --rule-box-text: #831843;
+            --rule-box-subtext: #9d174d;
+            --accent: #ec4899;
+            --grid-cell-bg: #ffffff;
+            --grid-cell-selected: #f472b6;
+            --grid-cell-highlight: #fbcfe8;
+        }
+
+        :root[data-theme="blue"], body[data-theme="blue"] {
+            --bg-main: #f0f9ff;
+            --bg-panel: #ffffff;
+            --bg-card: #e0f2fe;
+            --border-color: #7dd3fc;
+            --text-main: #0c4a6e;
+            --text-muted: #0369a1;
+            --rule-box-bg: #bae6fd;
+            --rule-box-border: #38bdf8;
+            --rule-box-text: #0c4a6e;
+            --rule-box-subtext: #0369a1;
+            --accent: #0284c7;
+            --grid-cell-bg: #ffffff;
+            --grid-cell-selected: #38bdf8;
+            --grid-cell-highlight: #bae6fd;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.4;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* PERFECT MOBILE LOGO V CENTERING FIX */
+        .logo-box {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            line-height: 1 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .logo-letter {
+            display: inline-block !important;
+            line-height: 1 !important;
+            margin-top: -1px;
+        }
+
+        .custom-panel {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            color: var(--text-main);
+        }
+
+        .custom-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            color: var(--text-main);
+        }
+
+        /* DYNAMIC THEME SYNCHRONIZED RULE CARDS & TEXT */
+        .rule-card {
+            background-color: var(--rule-box-bg) !important;
+            border: 1px solid var(--rule-box-border) !important;
+            color: var(--rule-box-text) !important;
+            transition: all 0.25s ease;
+        }
+
+        .rule-card strong, 
+        .rule-card b, 
+        .rule-card h4, 
+        .rule-card span.rule-heading,
+        #ruleContentNewbie strong,
+        #ruleContentPro strong {
+            color: var(--rule-box-text) !important;
+            font-weight: 800 !important;
+        }
+
+        .rule-card p, 
+        .rule-card span.rule-desc, 
+        .rule-card li,
+        #ruleContentNewbie p,
+        #ruleContentNewbie span,
+        #ruleContentPro li {
+            color: var(--rule-box-subtext) !important;
+        }
+
+        /* 9x9 Sudoku Grid Core Layout */
+        .sudoku-grid {
+            display: grid !important;
+            grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+            gap: 1px;
+            background-color: var(--border-color);
+            border: 3px solid var(--text-main);
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .sudoku-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            cursor: pointer;
+            user-select: none;
+            background-color: var(--grid-cell-bg) !important;
+            transition: all 0.15s ease;
+            position: relative;
+            padding: 1px;
+            text-align: center;
+            line-height: 1.05;
+            overflow: hidden;
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            text-overflow: clip;
+        }
+
+        .sudoku-cell:nth-child(3n) { border-right: 2px solid var(--text-main); }
+        .sudoku-cell:nth-child(9n) { border-right: none; }
+        .sudoku-row-bottom-border { border-bottom: 2px solid var(--text-main); }
+
+        .sudoku-cell.selected {
+            background-color: var(--grid-cell-selected) !important;
+            color: #ffffff !important;
+        }
+
+        .sudoku-cell.highlighted {
+            background-color: var(--grid-cell-highlight) !important;
+        }
+
+        .sudoku-cell.given {
+            font-weight: 800;
+            opacity: 0.95;
+        }
+
+        .sudoku-cell.is-note {
+            background-color: rgba(147, 51, 234, 0.15) !important;
+            color: #9333ea !important;
+            border: 1px dashed #a855f7 !important;
+            font-style: italic;
+        }
+
+        /* DISTINCT RED BORDER & SHADOW FOR INCORRECT CELLS */
+        .sudoku-cell.error {
+            border: 2px solid #ef4444 !important;
+            box-shadow: inset 0 0 0 2px #ef4444, 0 0 8px rgba(239, 68, 68, 0.7) !important;
+            background-color: rgba(239, 68, 68, 0.25) !important;
+            color: #dc2626 !important;
+            z-index: 10;
+            animation: shake 0.3s ease-in-out;
+        }
+
+        .sudoku-cell.masked-word {
+            background-color: var(--grid-cell-bg) !important;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-3px); }
+            40%, 80% { transform: translateX(3px); }
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 180px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 125px;
+            max-height: 135px;
+        }
+
+        .word-grid-fallback {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 6px !important;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+
+        body.is-pseudo-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            overflow-y: auto !important;
+            background-color: var(--bg-main) !important;
+            padding: 0.5rem !important;
+        }
+
+        :fullscreen header,
+        body.is-pseudo-fullscreen header,
+        :fullscreen #heroBanner,
+        body.is-pseudo-fullscreen #heroBanner,
+        :fullscreen footer,
+        body.is-pseudo-fullscreen footer {
+            display: none !important;
+        }
+
+        :fullscreen .max-w-7xl,
+        body.is-pseudo-fullscreen .max-w-7xl {
+            max-width: 100% !important;
+            margin: 0 !important;
+        }
+
+        #topicSelect {
+            font-size: 0.8rem !important;
+            font-weight: 700 !important;
+            padding: 0.4rem 0.6rem !important;
+            border-radius: 0.75rem;
+            line-height: 1.25;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        @media (min-width: 640px) {
+            #topicSelect {
+                font-size: 0.875rem !important;
+                padding: 0.45rem 0.75rem !important;
+            }
+        }
+
+        #topicSelect option {
+            font-size: 0.85rem !important;
+            font-weight: 600;
+            padding: 4px 8px;
+            background-color: var(--bg-panel);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased overflow-x-hidden" data-theme="dark">
+
+    <div class="min-h-screen flex flex-col justify-between p-2 sm:p-4 lg:p-6">
+        
+        <!-- HEADER BAR -->
+        <header class="max-w-7xl mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
+            <div class="flex items-center gap-3">
+                <div class="logo-box w-10 h-10 rounded-xl bg-emerald-500 text-white font-black text-2xl shadow-lg shadow-emerald-500/30 shrink-0">
+                    <span class="logo-letter">V</span>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+                        <span id="uiHeaderTitle">VOCAB SUDOKU</span> <span class="bg-amber-500 text-slate-950 text-xs px-2 py-0.5 rounded-full font-black">V2</span>
+                    </h1>
+                    <p id="uiHeaderSubtitle" class="text-xs opacity-80 hidden sm:block">Learn Words. Solve Sudoku. Multi-Level English Practice.</p>
+                </div>
+            </div>
+
+            <!-- Global Controls: Language & Theme -->
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                
+                <div class="flex items-center gap-1.5 bg-slate-800/40 p-1.5 rounded-2xl border-2 border-emerald-500/40 shadow-lg backdrop-blur-md">
+                    <button onclick="setLanguage('vi')" id="langBtnVi" class="px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all bg-emerald-600 text-white flex items-center gap-2 shadow-md">
+                        <span class="text-lg">🇻🇳</span> <span>VIE</span>
+                    </button>
+                    <button onclick="setLanguage('en')" id="langBtnEn" class="px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all opacity-60 hover:opacity-100 flex items-center gap-2 shadow-md">
+                        <span class="text-lg">🇬🇧</span> <span>ENG</span>
+                    </button>
+                </div>
+
+                <!-- Theme Buttons -->
+                <div class="flex items-center gap-1 bg-slate-800/20 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <button onclick="setTheme('dark')" id="themeBtnDark" class="px-2 py-1 rounded-xl text-xs font-bold border transition-all bg-slate-900 text-white border-slate-700 hover:scale-105 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-slate-900 border border-slate-500"></span> Dark
+                    </button>
+                    <button onclick="setTheme('light')" id="themeBtnLight" class="px-2 py-1 rounded-xl text-xs font-bold border transition-all bg-white text-slate-900 border-slate-300 hover:scale-105 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-slate-100 border border-slate-400"></span> Light
+                    </button>
+                    <button onclick="setTheme('pink')" id="themeBtnPink" class="px-2 py-1 rounded-xl text-xs font-bold border transition-all bg-pink-100 text-pink-900 border-pink-300 hover:scale-105 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-pink-400"></span> Pink
+                    </button>
+                    <button onclick="setTheme('blue')" id="themeBtnBlue" class="px-2 py-1 rounded-xl text-xs font-bold border transition-all bg-sky-100 text-sky-900 border-sky-300 hover:scale-105 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-sky-500"></span> Blue
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- INTRO HERO BANNER -->
+        <section id="heroBanner" class="max-w-7xl mx-auto w-full mb-3">
+            <div class="custom-panel p-3.5 sm:p-4 rounded-3xl border shadow-md flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="space-y-1 text-center md:text-left">
+                    <span id="uiHeroBadge" class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-500/20 text-emerald-500">Interactive Vocabulary Game</span>
+                    <h2 id="uiHeroTitle" class="text-base md:text-xl font-black">Luyện Từ Vựng Tiếng Anh Qua Logic Sudoku</h2>
+                    <p id="uiHeroDesc" class="text-xs opacity-90 max-w-2xl">
+                        Thử thách trí tuệ bằng cách điền từ vựng Tiếng Anh vào lưới Sudoku 9x9. Chọn ô trống, điền từ phù hợp và học định nghĩa chi tiết ngay trong ván chơi.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="newGame()" class="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate"></i> <span id="uiBtnNewGame">Ván Mới</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAME CONTROLS BANNER -->
+        <section class="max-w-7xl mx-auto w-full mb-3.5">
+            <div class="custom-panel p-3 sm:p-3.5 rounded-3xl border shadow-md space-y-2.5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <!-- Level Selection -->
+                    <div class="flex-1 space-y-1">
+                        <label for="topicSelect" id="uiLevelLabel" class="text-[11px] sm:text-xs font-black uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-xs sm:text-sm"></i> Cấp Độ & Chủ Đề
+                        </label>
+                        <select id="topicSelect" onchange="changeTopic()" class="w-full text-xs sm:text-sm font-semibold px-2.5 py-1.5 rounded-xl border cursor-pointer outline-none shadow-sm transition-all">
+                            <option value="vocab_a1" id="optA1">🟢 Level A1 — Basic Words (3-4 Letters)</option>
+                            <option value="vocab_a2" id="optA2" selected>🟢 Level A2 — Elementary Words (5 Letters)</option>
+                            <option value="vocab_b1" id="optB1">🟡 Level B1 — Intermediate Words</option>
+                            <option value="vocab_b2" id="optB2">🟡 Level B2 — Upper-Intermediate</option>
+                            <option value="environment" id="optC1">🔴 Level C1 — Environment & Science</option>
+                            <option value="ielts" id="optIELTS">🎓 IELTS — Advanced Academic</option>
+                            <option value="business" id="optBiz">💼 Business — Corporate Finance</option>
+                        </select>
+                    </div>
+
+                    <!-- Right Controls: Difficulty + Mute + Fullscreen + Timer -->
+                    <div class="flex flex-wrap items-end justify-between md:justify-end gap-2 shrink-0">
+                        <div>
+                            <span id="uiModeLabel" class="block text-[10px] sm:text-[11px] font-bold opacity-80 uppercase tracking-wider mb-1">
+                                Độ Khó Ván Chơi
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="setDifficulty('easy')" id="diffBtnEasy" class="diff-btn py-1.5 px-3 rounded-xl text-xs font-black transition-all bg-emerald-600 text-white shadow-sm hover:scale-105 flex items-center justify-center gap-1">
+                                    <span>🟢</span> <span id="uiDiffEasy">Easy</span>
+                                </button>
+                                <button onclick="setDifficulty('medium')" id="diffBtnMedium" class="diff-btn py-1.5 px-3 rounded-xl text-xs font-black transition-all opacity-60 hover:opacity-100 shadow-sm hover:scale-105 flex items-center justify-center gap-1">
+                                    <span>🟡</span> <span id="uiDiffMedium">Medium</span>
+                                </button>
+                                <button onclick="setDifficulty('hard')" id="diffBtnHard" class="diff-btn py-1.5 px-3 rounded-xl text-xs font-black transition-all opacity-60 hover:opacity-100 shadow-sm hover:scale-105 flex items-center justify-center gap-1">
+                                    <span id="uiDiffHard">🔥 Hard</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="toggleMute()" id="muteBtn" class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all bg-emerald-600 text-white border-emerald-500 hover:scale-105 flex items-center gap-1 shadow-sm" title="Bật/Tắt âm thanh">
+                                <i id="muteIcon" class="fa-solid fa-volume-high text-[11px]"></i>
+                                <span id="muteText" class="hidden xs:inline text-[11px]">Âm Thanh</span>
+                            </button>
+
+                            <button onclick="toggleFullscreen()" id="fullscreenBtn" class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all bg-slate-800 text-slate-200 border-slate-600 hover:scale-105 flex items-center gap-1 shadow-sm" title="Phóng to toàn màn hình">
+                                <i id="fullscreenIcon" class="fa-solid fa-expand text-[11px]"></i>
+                                <span id="fullscreenText" class="hidden xs:inline text-[11px]">Toàn Màn</span>
+                            </button>
+
+                            <div class="flex items-center gap-1 bg-slate-900 border border-emerald-500/80 text-emerald-400 px-2.5 py-1 rounded-xl font-extrabold text-xs shadow-sm">
+                                <i class="fa-regular fa-clock text-emerald-400 text-[11px]"></i>
+                                <span id="timerText" class="font-mono font-black tracking-wider text-xs">00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN GAME APP GRID -->
+        <main id="sudokuGame" class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+            
+            <!-- LEFT COLUMN: WORD KEYBOARD -->
+            <div class="lg:col-span-3 space-y-3">
+                
+                <!-- WORD SELECTOR & CONTROLS -->
+                <div class="hidden lg:block custom-panel p-3.5 rounded-3xl border shadow-md">
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider mb-2.5 flex items-center gap-2 opacity-90">
+                        <i class="fa-solid fa-keyboard text-emerald-500"></i> <span id="uiKeyboardTitle">Bàn Phím Từ</span>
+                    </h3>
+                    
+                    <div id="wordSelectorDesktop" class="word-grid-fallback grid grid-cols-3 gap-1.5 mb-2.5">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Action Control Buttons -->
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button onclick="eraseSelectedCell()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] font-bold hover:opacity-80 transition-opacity">
+                            <i class="fa-solid fa-eraser text-xs mb-1"></i> <span id="uiBtnEraseDesk">Erase</span>
+                        </button>
+                        <button id="notesBtnDesktop" onclick="toggleNotesBtn()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] font-bold hover:opacity-80 transition-all">
+                            <i class="fa-solid fa-pen text-xs mb-1"></i> <span id="uiBtnNotesDesk">Notes</span>
+                        </button>
+                        <button onclick="giveHint()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] font-bold hover:opacity-80 transition-opacity">
+                            <i class="fa-regular fa-lightbulb text-xs mb-1 text-amber-400"></i> <span id="uiBtnHintDesk">Gợi ý (3/3)</span>
+                        </button>
+                        <button onclick="undoMove()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] font-bold hover:opacity-80 transition-opacity">
+                            <i class="fa-solid fa-rotate-left text-xs mb-1"></i> <span id="uiBtnUndoDesk">Undo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RULES & GUIDE PANEL -->
+                <div class="custom-panel p-3.5 rounded-3xl border shadow-sm space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <h3 id="uiRulesTitle" class="text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+                            <i class="fa-solid fa-book-open"></i> Quy Tắc Chơi
+                        </h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-slate-800/20 rounded-xl border border-white/10 text-[10px] font-bold">
+                        <button id="ruleTabNewbie" onclick="switchRuleTab('newbie')" class="py-1.5 rounded-lg bg-emerald-500 text-white transition-all text-center">
+                            🐣 Tôi Mới Chơi
+                        </button>
+                        <button id="ruleTabPro" onclick="switchRuleTab('pro')" class="py-1.5 rounded-lg opacity-60 hover:opacity-100 transition-all text-center">
+                            ⚡ Tôi Đã Quen
+                        </button>
+                    </div>
+
+                    <div id="ruleContentNewbie" class="space-y-2 text-xs">
+                        <div class="rule-card p-2.5 rounded-xl shadow-sm">
+                            <strong id="uiRuleGoalTitle" class="rule-heading block">💡 Mục Tiêu Trò Chơi:</strong>
+                            <p id="uiRuleGoalDesc" class="rule-desc mt-0.5 text-[10.5px]">Lưới 9x9 gồm 9 ô lớn (3x3). Nhiệm vụ của bạn là điền đủ 9 từ vựng tiếng Anh vào toàn bộ các ô trống.</p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <div class="rule-card p-2.5 rounded-xl flex gap-2 items-start shadow-sm">
+                                <span class="badge-num w-4 h-4 rounded bg-emerald-500 text-white font-extrabold flex items-center justify-center shrink-0 text-[9.5px]">1</span>
+                                <div>
+                                    <strong id="uiRule1Title" class="rule-heading block text-[10.5px]">Quy tắc 3 Không:</strong>
+                                    <span id="uiRule1Desc" class="rule-desc text-[10px] leading-tight block">Mỗi từ vựng chỉ xuất hiện <strong>đúng 1 lần</strong> trong mỗi <strong>Hàng ngang</strong>, <strong>Cột dọc</strong>, và <strong>Khối 3x3</strong>.</span>
+                                </div>
+                            </div>
+
+                            <div class="rule-card p-2.5 rounded-xl flex gap-2 items-start shadow-sm">
+                                <span class="badge-num w-4 h-4 rounded bg-blue-500 text-white font-extrabold flex items-center justify-center shrink-0 text-[9.5px]">2</span>
+                                <div>
+                                    <strong id="uiRule2Title" class="rule-heading block text-[10.5px]">Cách Thao Tác:</strong>
+                                    <span id="uiRule2Desc" class="rule-desc text-[10px] leading-tight block">1. Nhấp chọn 1 ô trống trên bàn cờ.<br>2. Nhấp từ tương ứng ở <strong>Bàn Phím Từ</strong> bên trái để điền.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ruleContentPro" class="hidden space-y-2 text-xs">
+                        <div class="rule-card p-2.5 rounded-xl shadow-sm">
+                            <strong id="uiRuleProTitle" class="rule-heading block">⚡ Mẹo &amp; Tính Năng Nâng Cao:</strong>
+                        </div>
+                        <ul class="rule-card p-2.5 rounded-xl space-y-1 text-[10px] list-disc list-inside shadow-sm">
+                            <li id="uiRulePro1"><strong class="rule-heading">Notes (Ghi chú):</strong> <span class="rule-desc">Cho phép điền từ dự đoán tạm thời (hiển thị màu <i>tím nghiêng ✏️</i>).</span></li>
+                            <li id="uiRulePro2"><strong class="rule-heading">Gợi ý (Hint):</strong> <span class="rule-desc">Tối đa 3 lần mỗi ván chơi.</span></li>
+                            <li id="uiRulePro3"><strong class="rule-heading">Báo lỗi viền đỏ:</strong> <span class="rule-desc">Bật "Kiểm Tra Lỗi" để ô sai hiện viền đỏ nổi bật.</span></li>
+                            <li id="uiRulePro4"><strong class="rule-heading">Chế độ 🔥 Khó:</strong> <span class="rule-desc">Các ô gợi ý ban đầu hiện ổ khóa (🔒). Chạm vào ô để mở từ và nghe phát âm.</span></li>
+                        </ul>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- CENTER COLUMN: SUDOKU GAME BOARD -->
+            <div class="lg:col-span-6 flex flex-col items-center">
+                <div class="w-full custom-panel p-3 sm:p-4 rounded-3xl border shadow-2xl relative">
+                    
+                    <!-- Sudoku 9x9 Grid -->
+                    <div id="sudokuGrid" class="sudoku-grid rounded-xl overflow-hidden shadow-inner mb-3">
+                        <!-- 81 Cells dynamically rendered by JS -->
+                    </div>
+
+                    <!-- Toggles Bar -->
+                    <div class="flex justify-between items-center mb-2 px-1 text-xs font-semibold">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="checkErrorsToggle" checked onchange="handleCheckErrorsToggleChange()" class="sr-only peer">
+                            <div class="w-8 h-4 bg-slate-400 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                            <span id="uiCheckErrors" class="text-xs font-bold">Kiểm Tra Lỗi (Viền Đỏ)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="notesToggle" onchange="syncNotesToggleState()" class="sr-only peer">
+                            <div class="w-8 h-4 bg-slate-400 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600 relative"></div>
+                            <span id="uiNotesMode" class="text-purple-500 font-bold text-xs"><i class="fa-solid fa-pen text-xs mr-1"></i> Notes Mode</span>
+                        </label>
+                    </div>
+
+                    <!-- MOBILE-ONLY WORD SELECTOR & CONTROLS -->
+                    <div class="block lg:hidden space-y-2">
+                        <div id="wordSelectorMobile" class="word-grid-fallback grid grid-cols-3 gap-1.5">
+                            <!-- Rendered by JS -->
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="eraseSelectedCell()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] sm:text-xs font-bold hover:opacity-80 transition-opacity">
+                                <i class="fa-solid fa-eraser text-xs mb-0.5"></i> <span id="uiBtnEraseMob">Erase</span>
+                            </button>
+                            <button id="notesBtnMobile" onclick="toggleNotesBtn()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] sm:text-xs font-bold hover:opacity-80 transition-all">
+                                <i class="fa-solid fa-pen text-xs mb-0.5"></i> <span id="uiBtnNotesMob">Notes</span>
+                            </button>
+                            <button onclick="giveHint()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] sm:text-xs font-bold hover:opacity-80 transition-opacity">
+                                <i class="fa-regular fa-lightbulb text-xs mb-0.5 text-amber-400"></i> <span id="uiBtnHintMob">Gợi ý (3/3)</span>
+                            </button>
+                            <button onclick="undoMove()" class="custom-card p-2 rounded-xl border flex flex-col items-center justify-center text-[10px] sm:text-xs font-bold hover:opacity-80 transition-opacity">
+                                <i class="fa-solid fa-rotate-left text-xs mb-0.5"></i> <span id="uiBtnUndoMob">Undo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: WORD INSPECTOR & LIVE BOARD PROGRESS -->
+            <div class="lg:col-span-3 space-y-2.5">
+                
+                <!-- WORD INSPECTOR PANEL -->
+                <div class="custom-panel p-2.5 sm:p-3 rounded-3xl border shadow-sm space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h3 id="uiWordInspectorTitle" class="text-xs font-extrabold uppercase tracking-wider opacity-80">Word Inspector</h3>
+                        <button onclick="speakCurrentWord()" id="inspectAudioBtn" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center hover:scale-110 transition-transform" title="Listen Pronunciation">
+                            <i id="inspectAudioIcon" class="fa-solid fa-volume-high text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <div id="vocabIllustrationBox" class="w-full h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex flex-row items-center justify-center gap-2 relative overflow-hidden p-1.5">
+                        <canvas id="illustrationCanvas" class="w-10 h-10"></canvas>
+                        <span id="vocabEmojiBadge" class="text-base">🕒</span>
+                    </div>
+
+                    <div id="wordInfoBox" class="space-y-0.5">
+                        <div class="flex items-baseline gap-2">
+                            <h4 id="vocabWord" class="text-base font-black text-emerald-500 capitalize">Clock</h4>
+                            <span id="vocabPos" class="inline-block text-[9px] font-semibold italic px-1.5 py-0.2 rounded bg-slate-500/20">noun</span>
+                        </div>
+                        <p id="vocabDef" class="text-[11px] leading-snug opacity-90 line-clamp-2">A mechanical device for measuring and showing time.</p>
+                        <div class="pt-1 border-t border-white/10">
+                            <strong id="uiExampleLabel" class="text-[9px] block opacity-70">Example:</strong>
+                            <p id="vocabExample" class="text-[11px] italic opacity-90 truncate">"The clock struck midnight."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Game Progress & Stats Panel -->
+                <div class="custom-panel p-2.5 sm:p-3 rounded-3xl border shadow-sm space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h3 id="uiBoardProgressTitle" class="text-xs font-extrabold uppercase tracking-wider opacity-80">Live Board Progress</h3>
+                        <span id="boardCompletionPercent" class="text-xs font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">0%</span>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="statsChart"></canvas>
+                    </div>
+
+                    <div class="space-y-1 text-[11px]">
+                        <div class="flex justify-between items-center p-1 rounded-lg custom-card border">
+                            <span class="opacity-80 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span id="uiCellProgress">Cell Progress:</span></span>
+                            <span class="font-bold"><span id="statFilledCount">0</span> / 81</span>
+                        </div>
+                        <div class="flex justify-between items-center p-1 rounded-lg custom-card border">
+                            <span class="opacity-80 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> <span id="uiMasteredWords">Mastered Words:</span></span>
+                            <span class="font-bold"><span id="statMasteredCount">0</span> / 63</span>
+                        </div>
+                        <div class="flex justify-between items-center p-1 rounded-lg custom-card border">
+                            <span class="opacity-80 flex items-center gap-1.5"><i class="fa-solid fa-fire text-amber-500"></i> <span id="uiActiveStreak">Active Streak:</span></span>
+                            <span class="font-bold text-amber-500" id="statStreakCount">1 day</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- FOOTER BAR -->
+        <footer class="max-w-7xl mx-auto w-full text-center py-3 border-t border-white/10 mt-4 text-xs opacity-70 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div id="uiFooterCopy">© 2026 VOCAB SUDOKU V2 — Multi-Level English Vocabulary via Sudoku Logic. Auto-saved offline.</div>
+            <div class="flex gap-4">
+                <span><i class="fa-solid fa-bolt mr-1"></i> <span id="uiAutoSave">Auto-Save Enabled</span></span>
+                <span><i class="fa-solid fa-wifi mr-1"></i> <span id="uiOfflineReady">100% Offline Ready</span></span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const translations = {
+            vi: {
+                headerTitle: "VOCAB SUDOKU",
+                headerSubtitle: "Học từ vựng. Giải Sudoku. Luyện Tiếng Anh đa cấp độ.",
+                muteOn: "Âm Thanh",
+                muteOff: "Tắt Âm",
+                fullscreen: "Toàn Màn",
+                exitFullscreen: "Thoát",
+                diffEasy: "Dễ",
+                diffMedium: "Vừa",
+                diffHard: "🔥 Khó",
+                heroBadge: "Trò chơi từ vựng tương tác",
+                heroTitle: "Luyện Từ Vựng Tiếng Anh Qua Logic Sudoku",
+                heroDesc: "Thử thách trí tuệ bằng cách điền từ vựng Tiếng Anh vào lưới Sudoku 9x9. Chọn ô trống, điền từ phù hợp và học định nghĩa chi tiết ngay trong ván chơi.",
+                btnNewGame: "Ván Mới",
+                keyboardTitle: "Bàn Phím Từ Vựng",
+                btnErase: "Xóa",
+                btnNotes: "Ghi chú",
+                btnHint: "Gợi ý",
+                btnUndo: "Hoàn tác",
+                rulesTitle: "Quy Tắc Chơi",
+                tabNewbie: "🐣 Tôi Mới Chơi",
+                tabPro: "⚡ Tôi Đã Quen",
+                ruleGoalTitle: "💡 Mục Tiêu Trò Chơi:",
+                ruleGoalDesc: "Lưới 9x9 gồm 9 ô lớn (3x3). Nhiệm vụ của bạn là điền đủ 9 từ vựng tiếng Anh vào toàn bộ các ô trống.",
+                rule1Title: "Quy tắc 3 Không:",
+                rule1Desc: "Mỗi từ vựng chỉ xuất hiện <strong>đúng 1 lần</strong> trong mỗi <strong>Hàng ngang</strong>, <strong>Cột dọc</strong>, và <strong>Khối 3x3</strong>.",
+                rule2Title: "Cách Thao Tác:",
+                rule2Desc: "1. Nhấp chọn 1 ô trống trên bàn cờ.<br>2. Nhấp từ tương ứng ở <strong>Bàn Phím Từ</strong> bên trái để điền.",
+                ruleProTitle: "⚡ Mẹo & Tính Năng Nâng Cao:",
+                rulePro1: "<strong class='rule-heading'>Notes (Ghi chú):</strong> <span class='rule-desc'>Cho phép điền từ dự đoán tạm thời (hiển thị màu <i>tím nghiêng ✏️</i>).</span>",
+                rulePro2: "<strong class='rule-heading'>Gợi ý (Hint):</strong> <span class='rule-desc'>Tối đa 3 lần mỗi ván chơi.</span>",
+                rulePro3: "<strong class='rule-heading'>Báo lỗi viền đỏ:</strong> <span class='rule-desc'>Bật 'Kiểm Tra Lỗi' để ô sai hiện viền đỏ nổi bật.</span>",
+                rulePro4: "<strong class='rule-heading'>Chế độ 🔥 Khó:</strong> <span class='rule-desc'>Các ô gợi ý ban đầu hiện ổ khóa (🔒). Chạm vào ô để mở từ và nghe phát âm.</span>",
+                checkErrors: "Kiểm Tra Lỗi (Viền Đỏ)",
+                notesMode: "Chế Độ Ghi Chú",
+                wordInspector: "Tra Từ Vựng",
+                exampleLabel: "Ví dụ:",
+                boardProgress: "Tiến Độ Bàn Cờ",
+                cellProgress: "Số Ô Đã Điền:",
+                masteredWords: "Từ Đã Thành Thạo:",
+                activeStreak: "Chuỗi Ngày Chơi:",
+                streakUnit: "ngày",
+                levelLabel: "Cấp Độ & Chủ Đề",
+                modeLabel: "Độ Khó Ván Chơi",
+                optA1: "🟢 Level A1 — Từ vựng cơ bản (3-4 Ký tự)",
+                optA2: "🟢 Level A2 — Từ vựng tiểu học (5 Ký tự)",
+                optB1: "🟡 Level B1 — Từ vựng trung cấp",
+                optB2: "🟡 Level B2 — Từ vựng trung cao cấp",
+                optC1: "🔴 Level C1 — Môi trường & Khoa học",
+                optIELTS: "🎓 IELTS — Từ vựng học thuật nâng cao",
+                optBiz: "💼 Business — Tài chính & Doanh nghiệp",
+                winMsg: "🎉 CHÚC MỪNG! Bạn đã hoàn thành xuất sắc bàn Sudoku từ vựng này!",
+                noHintsLeft: "⚠️ Bạn đã sử dụng hết 3 lượt gợi ý cho ván chơi này!",
+                selectCellForHint: "💡 Vui lòng nhấp chọn 1 ô trống hoặc ô cần gợi ý trước!",
+                footerCopy: "© 2026 VOCAB SUDOKU V2 — Học từ vựng Tiếng Anh qua logic Sudoku. Tự động lưu offline.",
+                autoSave: "Tự Động Lưu",
+                offlineReady: "100% Chơi Offline"
+            },
+            en: {
+                headerTitle: "VOCAB SUDOKU",
+                headerSubtitle: "Learn Words. Solve Sudoku. Multi-Level English Practice.",
+                muteOn: "Sound On",
+                muteOff: "Mute",
+                fullscreen: "Fullscreen",
+                exitFullscreen: "Exit Fullscreen",
+                diffEasy: "Easy",
+                diffMedium: "Medium",
+                diffHard: "🔥 Hard",
+                heroBadge: "Interactive Vocabulary Game",
+                heroTitle: "Master English Vocabulary via Sudoku Logic",
+                heroDesc: "Challenge your mind by placing English vocabulary into a 9x9 Sudoku grid. Select blank cells, fill in words, and learn detailed definitions in real time.",
+                btnNewGame: "New Game",
+                keyboardTitle: "Word Keyboard",
+                btnErase: "Erase",
+                btnNotes: "Notes",
+                btnHint: "Hint",
+                btnUndo: "Undo",
+                rulesTitle: "Game Rules",
+                tabNewbie: "🐣 Beginner",
+                tabPro: "⚡ Experienced",
+                ruleGoalTitle: "💡 Objective:",
+                ruleGoalDesc: "A 9x9 grid with nine 3x3 blocks. Fill all empty cells with 9 unique English vocabulary words.",
+                rule1Title: "Rule of 3 Unique:",
+                rule1Desc: "Each word must appear exactly <strong>ONCE</strong> in every <strong>Row</strong>, <strong>Column</strong>, and <strong>3x3 Block</strong>.",
+                rule2Title: "How to Play:",
+                rule2Desc: "1. Tap an empty cell on the board.<br>2. Tap a word on the <strong>Word Keyboard</strong> to place it.",
+                ruleProTitle: "⚡ Pro Tips & Advanced Features:",
+                rulePro1: "<strong class='rule-heading'>Notes Mode:</strong> <span class='rule-desc'>Add temporary candidate words (styled in purple italic ✏️).</span>",
+                rulePro2: "<strong class='rule-heading'>Hint Limit:</strong> <span class='rule-desc'>Maximum 3 hints per puzzle.</span>",
+                rulePro3: "<strong class='rule-heading'>Red Border Errors:</strong> <span class='rule-desc'>Enable 'Check Errors' to highlight wrong cells in red.</span>",
+                rulePro4: "<strong class='rule-heading'>🔥 Hard Mode:</strong> <span class='rule-desc'>Initial clues display a lock (🔒). Tap cell to reveal word & listen.</span>",
+                checkErrors: "Check Errors (Red Border)",
+                notesMode: "Notes Mode",
+                wordInspector: "Word Inspector",
+                exampleLabel: "Example:",
+                boardProgress: "Live Board Progress",
+                cellProgress: "Cell Progress:",
+                masteredWords: "Mastered Words:",
+                activeStreak: "Active Streak:",
+                streakUnit: "day(s)",
+                levelLabel: "Level & Topic",
+                modeLabel: "Game Difficulty Mode",
+                optA1: "🟢 Level A1 — Basic Words (3-4 Letters)",
+                optA2: "🟢 Level A2 — Elementary Words (5 Letters)",
+                optB1: "🟡 Level B1 — Intermediate Words",
+                optB2: "🟡 Level B2 — Upper-Intermediate",
+                optC1: "🔴 Level C1 — Environment & Science",
+                optIELTS: "🎓 IELTS — Advanced Academic Vocabulary",
+                optBiz: "💼 Business — Corporate Finance",
+                winMsg: "🎉 CONGRATULATIONS! You solved the Vocab Sudoku puzzle!",
+                noHintsLeft: "⚠️ You have used all 3 hints for this match!",
+                selectCellForHint: "💡 Please select a cell first to reveal the hint!",
+                footerCopy: "© 2026 VOCAB SUDOKU V2 — Learn English Vocabulary via Sudoku Logic. Auto-saved offline.",
+                autoSave: "Auto-Save Enabled",
+                offlineReady: "100% Offline Ready"
+            }
+        };
+
+        const topics = {
+            vocab_a1: [
+                { id: 1, code: 'BOOK', full: 'Book', pos: 'noun', def: 'A written or printed work consisting of pages bound together.', example: 'She reads an interesting book every night.', emoji: '📖', art: 'book' },
+                { id: 2, code: 'MILK', full: 'Milk', pos: 'noun', def: 'A white liquid produced by female mammals as food.', example: 'He drinks a glass of warm milk before sleep.', emoji: '🥛', art: 'glass' },
+                { id: 3, code: 'FISH', full: 'Fish', pos: 'noun', def: 'A limbless cold-blooded vertebrate animal living in water.', example: 'The cat watched the gold fish in the bowl.', emoji: '🐟', art: 'fish' },
+                { id: 4, code: 'TREE', full: 'Tree', pos: 'noun', def: 'A woody perennial plant having a single stem or trunk.', example: 'Birds built a nest in the big apple tree.', emoji: '🌳', art: 'tree' },
+                { id: 5, code: 'PARK', full: 'Park', pos: 'noun', def: 'A large public garden or area used for recreation.', example: 'Children love playing in the neighborhood park.', emoji: '🏞️', art: 'park' },
+                { id: 6, code: 'CITY', full: 'City', pos: 'noun', def: 'A large human settlement with complex systems of housing.', example: 'Tokyo is a bustling and modern city.', emoji: '🏙️', art: 'city' },
+                { id: 7, code: 'STAR', full: 'Star', pos: 'noun', def: 'A luminous point in the night sky.', example: 'Look at that bright star in the sky!', emoji: '⭐', art: 'star' },
+                { id: 8, code: 'HOME', full: 'Home', pos: 'noun', def: 'The place where one lives permanently.', example: 'There is no place like home.', emoji: '🏡', art: 'house' },
+                { id: 9, code: 'RAIN', full: 'Rain', pos: 'noun', def: 'Water falling in drops condensed from atmosphere.', example: 'Take an umbrella because rain is falling.', emoji: '🌧️', art: 'rain' }
+            ],
+            vocab_a2: [
+                { id: 1, code: 'BEACH', full: 'Beach', pos: 'noun', def: 'A pebbly or sandy shore by the ocean or sea.', example: 'We walked along the sunny beach during vacation.', emoji: '🏖️', art: 'beach' },
+                { id: 2, code: 'CLOCK', full: 'Clock', pos: 'noun', def: 'A mechanical or electrical device for measuring time.', example: 'The wall clock struck midnight.', emoji: '🕒', art: 'clock' },
+                { id: 3, code: 'SHIRT', full: 'Shirt', pos: 'noun', def: 'A garment for the upper body made of cotton.', example: 'He wore a clean white shirt to the meeting.', emoji: '👔', art: 'shirt' },
+                { id: 4, code: 'RIVER', full: 'River', pos: 'noun', def: 'A large natural stream of water flowing to the sea.', example: 'Boats sailed down the quiet river.', emoji: '🌊', art: 'river' },
+                { id: 5, code: 'TRAIN', full: 'Train', pos: 'noun', def: 'A series of railway cars pulled by an engine.', example: 'The express train arrived on platform three.', emoji: '🚆', art: 'train' },
+                { id: 6, code: 'PAPER', full: 'Paper', pos: 'noun', def: 'Material manufactured in thin sheets from wood pulp.', example: 'Write your name on a piece of paper.', emoji: '📄', art: 'paper' },
+                { id: 7, code: 'MUSIC', full: 'Music', pos: 'noun', def: 'Vocal or instrumental sounds combined harmoniously.', example: 'Soft music played in the background.', emoji: '🎵', art: 'music' },
+                { id: 8, code: 'APPLE', full: 'Apple', pos: 'noun', def: 'A round edible fruit with red, yellow, or green skin.', example: 'An apple a day keeps the doctor away.', emoji: '🍎', art: 'apple' },
+                { id: 9, code: 'GREEN', full: 'Green', pos: 'adjective', def: 'The color between blue and yellow; color of grass.', example: 'Spring brings fresh green leaves to trees.', emoji: '🟢', art: 'green' }
+            ],
+            vocab_b1: [
+                { id: 1, code: 'CUL', full: 'Culture', pos: 'noun', def: 'The arts, beliefs, and customs of a particular group.', example: 'Learning a language helps you understand culture.', emoji: '🎭', art: 'culture' },
+                { id: 2, code: 'DEV', full: 'Device', pos: 'noun', def: 'A piece of mechanical or electronic equipment.', example: 'Smartphones are essential electronic devices.', emoji: '📱', art: 'device' },
+                { id: 3, code: 'HEA', full: 'Health', pos: 'noun', def: 'The state of being free from illness or injury.', example: 'Regular exercise is good for mental health.', emoji: '❤️', art: 'health' },
+                { id: 4, code: 'IMP', full: 'Impact', pos: 'noun', def: 'The marked effect or influence of something.', example: 'Technology has a huge impact on education.', emoji: '💥', art: 'star' },
+                { id: 5, code: 'MET', full: 'Method', pos: 'noun', def: 'A particular procedure for doing something.', example: 'This is an effective method for learning.', emoji: '📐', art: 'paper' },
+                { id: 6, code: 'OPT', full: 'Option', pos: 'noun', def: 'A thing that is or may be chosen.', example: 'Working remotely is a great option.', emoji: '🔀', art: 'star' },
+                { id: 7, code: 'REA', full: 'Reason', pos: 'noun', def: 'A cause or explanation for an event.', example: 'What was the main reason for his delay?', emoji: '💡', art: 'star' },
+                { id: 8, code: 'SIG', full: 'Signal', pos: 'noun', def: 'A gesture or sound that conveys information.', example: 'The traffic signal turned green.', emoji: '📡', art: 'device' },
+                { id: 9, code: 'SOU', full: 'Source', pos: 'noun', def: 'A place from which something originates.', example: 'Solar power is a clean source of energy.', emoji: '☀️', art: 'star' }
+            ],
+            vocab_b2: [
+                { id: 1, code: 'ACC', full: 'Access', pos: 'noun', def: 'The opportunity to approach or enter a system.', example: 'Students have free access to the library.', emoji: '🔑', art: 'star' },
+                { id: 2, code: 'BEN', full: 'Benefit', pos: 'noun', def: 'An advantage gained from something.', example: 'Reading brings long-term cognitive benefits.', emoji: '🎁', art: 'star' },
+                { id: 3, code: 'DEM', full: 'Demand', pos: 'noun', def: 'An insistent request or economic desire.', example: 'There is high demand for skilled programmers.', emoji: '📈', art: 'chart' },
+                { id: 4, code: 'GRO', full: 'Growth', pos: 'noun', def: 'The process of increasing in physical size or value.', example: 'The company achieved rapid growth.', emoji: '🌱', art: 'tree' },
+                { id: 5, code: 'INC', full: 'Income', pos: 'noun', def: 'Money received for work or investments.', example: 'Investing wisely can generate passive income.', emoji: '💵', art: 'chart' },
+                { id: 6, code: 'POL', full: 'Policy', pos: 'noun', def: 'A principle of action adopted by an organization.', example: 'The government introduced a new policy.', emoji: '📜', art: 'paper' },
+                { id: 7, code: 'STA', full: 'Status', pos: 'noun', def: 'The relative social or official standing.', example: 'He achieved high status in academia.', emoji: '🏅', art: 'star' },
+                { id: 8, code: 'TAR', full: 'Target', pos: 'noun', def: 'An objective towards which efforts are directed.', example: 'We met our sales target ahead of schedule.', emoji: '🎯', art: 'star' },
+                { id: 9, code: 'TRE', full: 'Trend', pos: 'noun', def: 'A general direction in which something changes.', example: 'Current trends show an increase in e-learning.', emoji: '📊', art: 'chart' }
+            ],
+            environment: [
+                { id: 1, code: 'BIO', full: 'Biodiversity', pos: 'noun', def: 'Variety of plant and animal life in a habitat.', example: 'Conservation preserves global biodiversity.', emoji: '🌿', art: 'tree' },
+                { id: 2, code: 'CLI', full: 'Climate', pos: 'noun', def: 'Weather conditions prevailing over a long period.', example: 'Global climate change affects weather patterns.', emoji: '🌍', art: 'star' },
+                { id: 3, code: 'CON', full: 'Conservation', pos: 'noun', def: 'Prevention of wasteful use of a resource.', example: 'Water conservation is vital in summer.', emoji: '💧', art: 'river' },
+                { id: 4, code: 'DEF', full: 'Deforestation', pos: 'noun', def: 'The action of clearing a wide area of trees.', example: 'Deforestation threatens wildlife species.', emoji: '🪓', art: 'tree' },
+                { id: 5, code: 'ECO', full: 'Ecosystem', pos: 'noun', def: 'Biological community of interacting organisms.', example: 'Coral reefs form a fragile ocean ecosystem.', emoji: '🐠', art: 'fish' },
+                { id: 6, code: 'OZO', full: 'Ozone', pos: 'noun', def: 'Atmosphere layer that absorbs radiation.', example: 'Protection of the ozone layer is critical.', emoji: '🛡️', art: 'star' },
+                { id: 7, code: 'POL', full: 'Pollution', pos: 'noun', def: 'Presence of harmful substances in environment.', example: 'Air pollution levels dropped significantly.', emoji: '🏭', art: 'city' },
+                { id: 8, code: 'SUS', full: 'Sustainable', pos: 'adjective', def: 'Able to be maintained at a certain level.', example: 'We must adopt sustainable energy sources.', emoji: '♻️', art: 'star' },
+                { id: 9, code: 'WAS', full: 'Waste', pos: 'noun', def: 'Material discarded as no longer useful.', example: 'Recycling helps reduce landfill waste.', emoji: '🗑️', art: 'star' }
+            ],
+            ielts: [
+                { id: 1, code: 'ADV', full: 'Advocate', pos: 'verb', def: 'Publicly recommend a cause or policy.', example: 'Experts advocate for greener city planning.', emoji: '📢', art: 'star' },
+                { id: 2, code: 'CON', full: 'Concede', pos: 'verb', def: 'Admit that something is true after denying.', example: 'He conceded that the analysis was right.', emoji: '🤝', art: 'star' },
+                { id: 3, code: 'DEP', full: 'Depict', pos: 'verb', def: 'Represent or show by a drawing or art form.', example: 'The author depicts life in old London.', emoji: '🎨', art: 'paper' },
+                { id: 4, code: 'ENH', full: 'Enhance', pos: 'verb', def: 'Intensify or improve the quality of.', example: 'Regular study will enhance your vocabulary.', emoji: '✨', art: 'star' },
+                { id: 5, code: 'FOS', full: 'Foster', pos: 'verb', def: 'Encourage or promote the development of.', example: 'Teachers aim to foster critical thinking.', emoji: '🌱', art: 'tree' },
+                { id: 6, code: 'IMP', full: 'Impair', pos: 'verb', def: 'Weaken or damage human functionality.', example: 'Lack of sleep can impair cognitive performance.', emoji: '⚠️', art: 'star' },
+                { id: 7, code: 'MIT', full: 'Mitigate', pos: 'verb', def: 'Make less severe, serious, or painful.', example: 'Steps were taken to mitigate risks.', emoji: '🛡️', art: 'star' },
+                { id: 8, code: 'REF', full: 'Refute', pos: 'verb', def: 'Prove a statement or theory to be false.', example: 'New data refuted the old claim.', emoji: '❌', art: 'star' },
+                { id: 9, code: 'SUS', full: 'Sustain', pos: 'verb', def: 'Strengthen or support over time.', example: 'Hope sustained them through hard times.', emoji: '💪', art: 'star' }
+            ],
+            business: [
+                { id: 1, code: 'AST', full: 'Asset', pos: 'noun', def: 'A useful or valuable quality or property.', example: 'Intellectual property is a major asset.', emoji: '🏢', art: 'city' },
+                { id: 2, code: 'BUD', full: 'Budget', pos: 'noun', def: 'An estimate of income and expenditure.', example: 'The project remained strictly within budget.', emoji: '💰', art: 'chart' },
+                { id: 3, code: 'EQU', full: 'Equity', pos: 'noun', def: 'The value of the shares issued by a company.', example: 'Investors acquired equity in the startup.', emoji: '⚖️', art: 'star' },
+                { id: 4, code: 'FIN', full: 'Finance', pos: 'noun', def: 'The management of large amounts of money.', example: 'She leads the corporate finance team.', emoji: '💳', art: 'chart' },
+                { id: 5, code: 'GRO', full: 'Growth', pos: 'noun', def: 'The process of increasing in revenue.', example: 'The report shows solid financial growth.', emoji: '📊', art: 'chart' },
+                { id: 6, code: 'INV', full: 'Invest', pos: 'verb', def: 'Put money into financial schemes for profit.', example: 'Companies invest heavily in research.', emoji: '📈', art: 'chart' },
+                { id: 7, code: 'MAR', full: 'Market', pos: 'noun', def: 'An arena of commercial trade.', example: 'They entered the global technology market.', emoji: '🛒', art: 'star' },
+                { id: 8, code: 'PRO', full: 'Profit', pos: 'noun', def: 'A financial gain, difference between earned and spent.', example: 'Annual profits exceeded expectations.', emoji: '💵', art: 'chart' },
+                { id: 9, code: 'VAL', full: 'Value', pos: 'noun', def: 'The regard that something is held to deserve.', example: 'Delivering customer value is our priority.', emoji: '💎', art: 'star' }
+            ]
+        };
+
+        const baseSolution = [
+            [1,2,3, 4,5,6, 7,8,9],
+            [4,5,6, 7,8,9, 1,2,3],
+            [7,8,9, 1,2,3, 4,5,6],
+            [2,3,1, 5,6,4, 8,9,7],
+            [5,6,4, 8,9,7, 2,3,1],
+            [8,9,7, 2,3,1, 5,6,4],
+            [3,1,2, 6,4,5, 9,7,8],
+            [6,4,5, 9,7,8, 3,1,2],
+            [9,7,8, 3,1,2, 6,4,5]
+        ];
+
+        let currentLang = 'vi';
+        let currentTopicKey = 'vocab_a2';
+        let currentDifficulty = 'easy';
+        let currentBoard = [];
+        let notesBoard = [];
+        let solutionBoard = [];
+        let givenBoard = [];
+        let selectedCellIndex = null;
+        let mistakes = 0;
+        let hintsRemaining = 3; // HINT LIMIT SYSTEM
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let isNotesActive = false;
+        let isMuted = false;
+        let historyStack = [];
+        let statsChartObj = null;
+
+        // SINGLE-FLIGHT SPEECH SYNTHESIS ENGINE
+        let androidVoicesList = [];
+        let isAudioContextUnlocked = false;
+        let webAudioCtx = null;
+        let onlineAudioPlayer = new Audio();
+        let fallbackAudioTimer = null;
+
+        let userStats = {
+            masteredWordIds: [],
+            puzzlesSolved: 0,
+            streakDays: 1,
+            lastPlayedDate: new Date().toDateString()
+        };
+
+        function getWordDisplayText(wordObj) {
+            if (!wordObj) return '';
+            if (currentTopicKey === 'vocab_a1' || currentTopicKey === 'vocab_a2') {
+                return wordObj.full.toUpperCase();
+            }
+            return wordObj.code;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initLanguage();
+            initTheme();
+            loadMuteState();
+            loadUserStats();
+            initChart();
+            listenFullscreenChanges();
+            initAndroidSpeechEngine();
+            
+            const unlockAudioHandler = () => {
+                unlockAndroidAudioContext();
+                document.removeEventListener('touchstart', unlockAudioHandler);
+                document.removeEventListener('click', unlockAudioHandler);
+            };
+            document.addEventListener('touchstart', unlockAudioHandler);
+            document.addEventListener('click', unlockAudioHandler);
+
+            if (!loadGameState()) {
+                newGame();
+            }
+        });
+
+        function initAndroidSpeechEngine() {
+            if ('speechSynthesis' in window) {
+                const updateVoices = () => {
+                    try {
+                        androidVoicesList = window.speechSynthesis.getVoices();
+                    } catch(e){}
+                };
+                updateVoices();
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = updateVoices;
+                }
+            }
+        }
+
+        function unlockAndroidAudioContext() {
+            if (isAudioContextUnlocked) return;
+            isAudioContextUnlocked = true;
+
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.resume();
+                } catch(e){}
+            }
+
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    webAudioCtx = new AudioCtx();
+                    if (webAudioCtx.state === 'suspended') {
+                        webAudioCtx.resume();
+                    }
+                }
+            } catch (e){}
+        }
+
+        function playOnlineAudioFallback(text) {
+            if (isMuted || !text) return;
+            try {
+                if (onlineAudioPlayer) {
+                    onlineAudioPlayer.pause();
+                    onlineAudioPlayer.currentTime = 0;
+                }
+                const audioUrl = `https://dict.youdao.com/dictvoice?type=0&audio=${encodeURIComponent(text)}`;
+                onlineAudioPlayer.src = audioUrl;
+                onlineAudioPlayer.play().catch(err => {
+                    console.warn('Online audio fallback error:', err);
+                });
+            } catch(e){}
+        }
+
+        function speakWord(text) {
+            if (isMuted || !text) return;
+
+            unlockAndroidAudioContext();
+
+            if (fallbackAudioTimer) {
+                clearTimeout(fallbackAudioTimer);
+                fallbackAudioTimer = null;
+            }
+
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+
+                    let hasStarted = false;
+
+                    utterance.onstart = () => {
+                        hasStarted = true;
+                        if (fallbackAudioTimer) {
+                            clearTimeout(fallbackAudioTimer);
+                            fallbackAudioTimer = null;
+                        }
+                    };
+
+                    utterance.onerror = () => {
+                        if (!hasStarted) {
+                            playOnlineAudioFallback(text);
+                        }
+                    };
+
+                    const voices = androidVoicesList.length > 0 ? androidVoicesList : window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        const enVoice = voices.find(v => (v.lang.startsWith('en') || v.lang.includes('US')) && 
+                            (v.name.includes('Google') || v.name.includes('Android') || v.name.includes('Samantha') || v.name.includes('Alex')));
+                        if (enVoice) {
+                            utterance.voice = enVoice;
+                        }
+                    }
+
+                    window.speechSynthesis.speak(utterance);
+
+                    fallbackAudioTimer = setTimeout(() => {
+                        if (!hasStarted && (!window.speechSynthesis || !window.speechSynthesis.speaking)) {
+                            playOnlineAudioFallback(text);
+                        }
+                    }, 300);
+
+                    return;
+                } catch (e) {
+                    console.warn('Native SpeechSynthesis failed:', e);
+                }
+            }
+
+            playOnlineAudioFallback(text);
+        }
+
+        function speakCurrentWord() {
+            const wordName = document.getElementById('vocabWord').innerText;
+            speakWord(wordName);
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('vocab_sudoku_lang', lang);
+
+            const btnVi = document.getElementById('langBtnVi');
+            const btnEn = document.getElementById('langBtnEn');
+
+            if (lang === 'vi') {
+                btnVi.className = "px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all bg-emerald-600 text-white flex items-center gap-2 shadow-md";
+                btnEn.className = "px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all opacity-60 hover:opacity-100 flex items-center gap-2 shadow-md";
+            } else {
+                btnEn.className = "px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all bg-emerald-600 text-white flex items-center gap-2 shadow-md";
+                btnVi.className = "px-4 py-2 rounded-xl text-sm sm:text-base font-black transition-all opacity-60 hover:opacity-100 flex items-center gap-2 shadow-md";
+            }
+
+            updateUIWithTranslations();
+        }
+
+        function initLanguage() {
+            const savedLang = localStorage.getItem('vocab_sudoku_lang') || 'vi';
+            setLanguage(savedLang);
+        }
+
+        function updateUIWithTranslations() {
+            const t = translations[currentLang];
+
+            document.getElementById('uiHeaderTitle').innerText = t.headerTitle;
+            document.getElementById('uiHeaderSubtitle').innerText = t.headerSubtitle;
+            document.getElementById('muteText').innerText = isMuted ? t.muteOff : t.muteOn;
+
+            document.getElementById('uiHeroBadge').innerText = t.heroBadge;
+            document.getElementById('uiHeroTitle').innerText = t.heroTitle;
+            document.getElementById('uiHeroDesc').innerText = t.heroDesc;
+            document.getElementById('uiBtnNewGame').innerText = t.btnNewGame;
+
+            document.getElementById('uiKeyboardTitle').innerText = t.keyboardTitle;
+            document.getElementById('uiBtnEraseDesk').innerText = t.btnErase;
+            document.getElementById('uiBtnNotesDesk').innerText = t.btnNotes;
+            updateHintButtonText();
+            document.getElementById('uiBtnUndoDesk').innerText = t.btnUndo;
+
+            document.getElementById('uiBtnEraseMob').innerText = t.btnErase;
+            document.getElementById('uiBtnNotesMob').innerText = t.btnNotes;
+            document.getElementById('uiBtnUndoMob').innerText = t.btnUndo;
+
+            document.getElementById('uiRulesTitle').innerHTML = `<i class="fa-solid fa-book-open"></i> ${t.rulesTitle}`;
+            document.getElementById('ruleTabNewbie').innerText = t.tabNewbie;
+            document.getElementById('ruleTabPro').innerText = t.tabPro;
+            document.getElementById('uiRuleGoalTitle').innerText = t.ruleGoalTitle;
+            document.getElementById('uiRuleGoalDesc').innerText = t.ruleGoalDesc;
+            document.getElementById('uiRule1Title').innerText = t.rule1Title;
+            document.getElementById('uiRule1Desc').innerHTML = t.rule1Desc;
+            document.getElementById('uiRule2Title').innerText = t.rule2Title;
+            document.getElementById('uiRule2Desc').innerHTML = t.rule2Desc;
+            document.getElementById('uiRuleProTitle').innerText = t.ruleProTitle;
+            document.getElementById('uiRulePro1').innerHTML = t.rulePro1;
+            document.getElementById('uiRulePro2').innerHTML = t.rulePro2;
+            document.getElementById('uiRulePro3').innerHTML = t.rulePro3;
+            document.getElementById('uiRulePro4').innerHTML = t.rulePro4;
+
+            document.getElementById('uiLevelLabel').innerHTML = `<i class="fa-solid fa-layer-group text-xs sm:text-sm"></i> ${t.levelLabel}`;
+            document.getElementById('uiModeLabel').innerText = t.modeLabel;
+            document.getElementById('uiDiffEasy').innerText = t.diffEasy;
+            document.getElementById('uiDiffMedium').innerText = t.diffMedium;
+            document.getElementById('uiDiffHard').innerText = t.diffHard;
+
+            document.getElementById('optA1').innerText = t.optA1;
+            document.getElementById('optA2').innerText = t.optA2;
+            document.getElementById('optB1').innerText = t.optB1;
+            document.getElementById('optB2').innerText = t.optB2;
+            document.getElementById('optC1').innerText = t.optC1;
+            document.getElementById('optIELTS').innerText = t.optIELTS;
+            document.getElementById('optBiz').innerText = t.optBiz;
+
+            document.getElementById('uiCheckErrors').innerText = t.checkErrors;
+            document.getElementById('uiNotesMode').innerHTML = `<i class="fa-solid fa-pen text-xs mr-1"></i> ${t.notesMode}`;
+
+            document.getElementById('uiWordInspectorTitle').innerText = t.wordInspector;
+            document.getElementById('uiExampleLabel').innerText = t.exampleLabel;
+            document.getElementById('uiBoardProgressTitle').innerText = t.boardProgress;
+            document.getElementById('uiCellProgress').innerText = t.cellProgress;
+            document.getElementById('uiMasteredWords').innerText = t.masteredWords;
+            document.getElementById('uiActiveStreak').innerText = t.activeStreak;
+
+            document.getElementById('uiFooterCopy').innerText = t.footerCopy;
+            document.getElementById('uiAutoSave').innerText = t.autoSave;
+            document.getElementById('uiOfflineReady').innerText = t.offlineReady;
+
+            updateStatsUI();
+        }
+
+        function updateHintButtonText() {
+            const t = translations[currentLang];
+            const hintText = `${t.btnHint} (${hintsRemaining}/3)`;
+            const deskBtn = document.getElementById('uiBtnHintDesk');
+            const mobBtn = document.getElementById('uiBtnHintMob');
+            if (deskBtn) deskBtn.innerText = hintText;
+            if (mobBtn) mobBtn.innerText = hintText;
+        }
+
+        function toggleFullscreen() {
+            const isPseudoFS = document.body.classList.contains('is-pseudo-fullscreen');
+            const isNativeFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+
+            if (isNativeFS || isPseudoFS) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                document.body.classList.remove('is-pseudo-fullscreen');
+                updateFullscreenUI(false);
+            } else {
+                const docEl = document.documentElement;
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen()
+                        .then(() => updateFullscreenUI(true))
+                        .catch(() => {
+                            document.body.classList.add('is-pseudo-fullscreen');
+                            updateFullscreenUI(true);
+                        });
+                } else if (docEl.webkitRequestFullscreen) {
+                    try {
+                        docEl.webkitRequestFullscreen();
+                        updateFullscreenUI(true);
+                    } catch (e) {
+                        document.body.classList.add('is-pseudo-fullscreen');
+                        updateFullscreenUI(true);
+                    }
+                } else {
+                    document.body.classList.add('is-pseudo-fullscreen');
+                    updateFullscreenUI(true);
+                }
+            }
+        }
+
+        function updateFullscreenUI(isFS) {
+            const fsBtn = document.getElementById('fullscreenBtn');
+            const fsIcon = document.getElementById('fullscreenIcon');
+            const t = translations[currentLang];
+            
+            if (fsIcon) {
+                fsIcon.className = isFS ? 'fa-solid fa-compress text-[11px]' : 'fa-solid fa-expand text-[11px]';
+            }
+            if (fsBtn) {
+                const fsText = document.getElementById('fullscreenText');
+                if (fsText) fsText.innerText = isFS ? t.exitFullscreen : t.fullscreen;
+
+                if (isFS) {
+                    fsBtn.classList.add('bg-amber-600', 'text-white', 'border-amber-500');
+                    fsBtn.classList.remove('bg-slate-800', 'text-slate-200', 'border-slate-600');
+                } else {
+                    fsBtn.classList.remove('bg-amber-600', 'text-white', 'border-amber-500');
+                    fsBtn.classList.add('bg-slate-800', 'text-slate-200', 'border-slate-600');
+                }
+            }
+        }
+
+        function listenFullscreenChanges() {
+            const handleFSChange = () => {
+                const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || document.body.classList.contains('is-pseudo-fullscreen'));
+                updateFullscreenUI(isFS);
+            };
+
+            document.addEventListener('fullscreenchange', handleFSChange);
+            document.addEventListener('webkitfullscreenchange', handleFSChange);
+            document.addEventListener('msfullscreenchange', handleFSChange);
+        }
+
+        function loadMuteState() {
+            const savedMute = localStorage.getItem('vocab_sudoku_muted');
+            isMuted = savedMute === 'true';
+            updateMuteUI();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            localStorage.setItem('vocab_sudoku_muted', isMuted ? 'true' : 'false');
+            if (isMuted && 'speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                } catch(e){}
+            }
+            updateMuteUI();
+        }
+
+        function updateMuteUI() {
+            const muteBtn = document.getElementById('muteBtn');
+            const muteIcon = document.getElementById('muteIcon');
+            const muteText = document.getElementById('muteText');
+            const inspectAudioBtn = document.getElementById('inspectAudioBtn');
+            const inspectAudioIcon = document.getElementById('inspectAudioIcon');
+            const t = translations[currentLang];
+
+            if (muteIcon) {
+                muteIcon.className = isMuted ? 'fa-solid fa-volume-xmark text-[11px]' : 'fa-solid fa-volume-high text-[11px]';
+            }
+
+            if (muteText) {
+                muteText.innerText = isMuted ? t.muteOff : t.muteOn;
+            }
+
+            if (muteBtn) {
+                if (isMuted) {
+                    muteBtn.classList.remove('bg-emerald-600', 'border-emerald-500');
+                    muteBtn.classList.add('bg-rose-600', 'border-rose-500');
+                } else {
+                    muteBtn.classList.remove('bg-rose-600', 'border-rose-500');
+                    muteBtn.classList.add('bg-emerald-600', 'border-emerald-500');
+                }
+            }
+
+            if (inspectAudioBtn && inspectAudioIcon) {
+                if (isMuted) {
+                    inspectAudioBtn.classList.remove('text-emerald-500', 'bg-emerald-500/20');
+                    inspectAudioBtn.classList.add('text-slate-400', 'bg-slate-700/40');
+                    inspectAudioIcon.className = 'fa-solid fa-volume-xmark text-[10px]';
+                } else {
+                    inspectAudioBtn.classList.add('text-emerald-500', 'bg-emerald-500/20');
+                    inspectAudioBtn.classList.remove('text-slate-400', 'bg-slate-700/40');
+                    inspectAudioIcon.className = 'fa-solid fa-volume-high text-[10px]';
+                }
+            }
+        }
+
+        function getThemeTextColor(theme) {
+            switch(theme) {
+                case 'light': return '#0f172a';
+                case 'pink': return '#831843';
+                case 'blue': return '#0c4a6e';
+                default: return '#f8fafc';
+            }
+        }
+
+        function setTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            document.body.setAttribute('data-theme', themeName);
+            localStorage.setItem('vocab_sudoku_theme', themeName);
+
+            if (statsChartObj && statsChartObj.options) {
+                statsChartObj.options.plugins.legend.labels.color = getThemeTextColor(themeName);
+                statsChartObj.update();
+            }
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('vocab_sudoku_theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        function setDifficulty(level) {
+            currentDifficulty = level;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.add('opacity-60');
+                btn.classList.remove('bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'text-white');
+            });
+
+            const targetBtn = document.getElementById(`diffBtn${level.charAt(0).toUpperCase() + level.slice(1)}`);
+            if (targetBtn) {
+                targetBtn.classList.remove('opacity-60');
+                if (level === 'easy') targetBtn.classList.add('bg-emerald-600', 'text-white');
+                if (level === 'medium') targetBtn.classList.add('bg-amber-600', 'text-white');
+                if (level === 'hard') targetBtn.classList.add('bg-rose-600', 'text-white');
+            }
+
+            newGame();
+        }
+
+        function switchRuleTab(tabType) {
+            const btnNewbie = document.getElementById('ruleTabNewbie');
+            const btnPro = document.getElementById('ruleTabPro');
+            const contentNewbie = document.getElementById('ruleContentNewbie');
+            const contentPro = document.getElementById('ruleContentPro');
+
+            if (tabType === 'newbie') {
+                btnNewbie.className = "py-1.5 rounded-lg bg-emerald-500 text-white transition-all text-center font-bold";
+                btnPro.className = "py-1.5 rounded-lg opacity-60 hover:opacity-100 transition-all text-center font-bold";
+                contentNewbie.classList.remove('hidden');
+                contentPro.classList.add('hidden');
+            } else {
+                btnPro.className = "py-1.5 rounded-lg bg-purple-600 text-white transition-all text-center font-bold";
+                btnNewbie.className = "py-1.5 rounded-lg opacity-60 hover:opacity-100 transition-all text-center font-bold";
+                contentPro.classList.remove('hidden');
+                contentNewbie.classList.add('hidden');
+            }
+        }
+
+        function newGame() {
+            solutionBoard = baseSolution;
+            currentBoard = JSON.parse(JSON.stringify(baseSolution));
+            notesBoard = Array(9).fill(0).map(() => Array(9).fill(0));
+            givenBoard = Array(9).fill(0).map(() => Array(9).fill(false));
+            mistakes = 0;
+            hintsRemaining = 3; // Reset hint limit to 3
+
+            secondsElapsed = 0;
+            document.getElementById('timerText').innerText = '00:00';
+
+            let cluesRatio = 0.6;
+            if (currentDifficulty === 'medium') cluesRatio = 0.42;
+            if (currentDifficulty === 'hard') cluesRatio = 0.32;
+
+            for(let r = 0; r < 9; r++) {
+                for(let c = 0; c < 9; c++) {
+                    if(Math.random() > cluesRatio) {
+                        currentBoard[r][c] = 0;
+                    } else {
+                        givenBoard[r][c] = true;
+                    }
+                }
+            }
+
+            renderGrid();
+            renderWordSelector();
+            updateHintButtonText();
+            startTimer();
+            updateInspectWord(topics[currentTopicKey][0]);
+            updateStatsUI();
+            saveGameState();
+        }
+
+        function handleCheckErrorsToggleChange() {
+            renderGrid();
+            saveGameState();
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('sudokuGrid');
+            gridEl.innerHTML = '';
+            const topicWords = topics[currentTopicKey];
+            const isCheckErrorsActive = document.getElementById('checkErrorsToggle').checked;
+
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const index = r * 9 + c;
+                    const val = currentBoard[r][c];
+                    const noteVal = notesBoard[r][c];
+                    const isGiven = givenBoard[r][c];
+                    const isCorrectSolution = (val === solutionBoard[r][c]);
+
+                    const cell = document.createElement('div');
+                    cell.className = `sudoku-cell ${isGiven ? 'given' : ''} ${r % 3 === 2 && r < 8 ? 'sudoku-row-bottom-border' : ''}`;
+                    cell.dataset.index = index;
+                    cell.onclick = () => selectCell(r, c);
+
+                    // HIGHLIGHT INCORRECT PLACEMENTS WITH DISTINCT RED BORDER & RED GLOW WHEN ERROR CHECK IS ENABLED
+                    if (val > 0 && !isGiven && isCheckErrorsActive && !isCorrectSolution) {
+                        cell.classList.add('error');
+                    }
+
+                    if (val > 0) {
+                        const wordObj = topicWords.find(w => w.id === val);
+                        
+                        if (currentDifficulty === 'hard' && isGiven && selectedCellIndex !== index) {
+                            cell.innerText = '🔒';
+                            cell.classList.add('masked-word');
+                        } else {
+                            const displayText = getWordDisplayText(wordObj);
+                            cell.innerText = displayText;
+                            cell.classList.remove('masked-word');
+
+                            if (displayText.length >= 6) {
+                                cell.classList.add('text-[7.5px]', 'xs:text-[8.5px]', 'sm:text-[11px]', 'md:text-xs', 'lg:text-[13px]', 'tracking-tighter');
+                            } else if (displayText.length === 5) {
+                                cell.classList.add('text-[8px]', 'xs:text-[9.5px]', 'sm:text-xs', 'md:text-sm', 'lg:text-[14px]', 'tracking-tighter');
+                            } else if (displayText.length === 4) {
+                                cell.classList.add('text-[9.5px]', 'xs:text-[11px]', 'sm:text-xs', 'md:text-sm', 'lg:text-base', 'tracking-tight');
+                            } else {
+                                cell.classList.add('text-[11px]', 'xs:text-xs', 'sm:text-sm', 'md:text-base', 'lg:text-lg');
+                            }
+                        }
+                    } else if (noteVal > 0) {
+                        const wordObj = topicWords.find(w => w.id === noteVal);
+                        const displayText = getWordDisplayText(wordObj);
+                        cell.innerHTML = `<span class="text-[7.5px] sm:text-[9px] font-bold text-purple-600 block opacity-95">✏️ ${displayText}</span>`;
+                        cell.classList.add('is-note');
+                    }
+
+                    gridEl.appendChild(cell);
+                }
+            }
+
+            // Restore selection styling
+            if (selectedCellIndex !== null) {
+                const sr = Math.floor(selectedCellIndex / 9);
+                const sc = selectedCellIndex % 9;
+                const cells = gridEl.querySelectorAll('.sudoku-cell');
+                cells.forEach((cell, idx) => {
+                    const cr = Math.floor(idx / 9);
+                    const cc = idx % 9;
+                    if (idx === selectedCellIndex) {
+                        cell.classList.add('selected');
+                    } else if (cr === sr || cc === sc || (Math.floor(cr/3) === Math.floor(sr/3) && Math.floor(cc/3) === Math.floor(sc/3))) {
+                        cell.classList.add('highlighted');
+                    }
+                });
+            }
+        }
+
+        function renderWordSelector() {
+            const desktopContainer = document.getElementById('wordSelectorDesktop');
+            const mobileContainer = document.getElementById('wordSelectorMobile');
+            
+            desktopContainer.innerHTML = '';
+            mobileContainer.innerHTML = '';
+            
+            const words = topics[currentTopicKey];
+            const isFullWordMode = (currentTopicKey === 'vocab_a1' || currentTopicKey === 'vocab_a2');
+            
+            const colors = [
+                'bg-emerald-600', 'bg-blue-600', 'bg-amber-600',
+                'bg-purple-600', 'bg-teal-600', 'bg-rose-600',
+                'bg-indigo-600', 'bg-lime-600', 'bg-sky-600'
+            ];
+
+            words.forEach((word, idx) => {
+                const primaryText = getWordDisplayText(word);
+                const subText = isFullWordMode ? word.pos : word.full;
+
+                const btnHTML = `
+                    <span class="${isFullWordMode ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'} font-extrabold tracking-tight truncate max-w-full">${primaryText}</span>
+                    <span class="text-[8px] font-medium opacity-80 truncate max-w-full">${subText}</span>
+                `;
+
+                const btnDesk = document.createElement('button');
+                btnDesk.className = `${colors[idx % colors.length]} text-white p-1.5 rounded-xl flex flex-col items-center justify-center font-bold hover:scale-95 transition-transform shadow-md overflow-hidden`;
+                btnDesk.onclick = () => handleWordInput(word.id);
+                btnDesk.innerHTML = btnHTML;
+                desktopContainer.appendChild(btnDesk);
+
+                const btnMob = document.createElement('button');
+                btnMob.className = `${colors[idx % colors.length]} text-white p-1.5 rounded-xl flex flex-col items-center justify-center font-bold hover:scale-95 transition-transform shadow-md overflow-hidden`;
+                btnMob.onclick = () => handleWordInput(word.id);
+                btnMob.innerHTML = btnHTML;
+                mobileContainer.appendChild(btnMob);
+            });
+        }
+
+        function selectCell(r, c) {
+            selectedCellIndex = r * 9 + c;
+            renderGrid();
+
+            let targetWordId = currentBoard[r][c] || notesBoard[r][c];
+            if (givenBoard[r][c] && targetWordId === 0) {
+                targetWordId = solutionBoard[r][c];
+            }
+
+            if (targetWordId > 0) {
+                const wordObj = topics[currentTopicKey].find(w => w.id === targetWordId);
+                if (wordObj) {
+                    updateInspectWord(wordObj);
+                    speakWord(wordObj.full);
+                }
+            }
+        }
+
+        function handleWordInput(wordId) {
+            if (selectedCellIndex === null) return;
+            const r = Math.floor(selectedCellIndex / 9);
+            const c = selectedCellIndex % 9;
+
+            if (givenBoard[r][c]) return;
+
+            historyStack.push({
+                board: JSON.parse(JSON.stringify(currentBoard)),
+                notes: JSON.parse(JSON.stringify(notesBoard))
+            });
+
+            if (isNotesActive) {
+                notesBoard[r][c] = (notesBoard[r][c] === wordId) ? 0 : wordId;
+                currentBoard[r][c] = 0;
+            } else {
+                currentBoard[r][c] = wordId;
+                notesBoard[r][c] = 0;
+
+                if (solutionBoard[r][c] !== wordId) {
+                    mistakes++;
+                } else {
+                    recordMasteredWord(`${currentTopicKey}_${wordId}`);
+                }
+            }
+
+            selectCell(r, c);
+            updateStatsUI();
+            checkPuzzleCompletion();
+            saveGameState();
+        }
+
+        function checkPuzzleCompletion() {
+            let isComplete = true;
+            for(let r = 0; r < 9; r++) {
+                for(let c = 0; c < 9; c++) {
+                    if (currentBoard[r][c] !== solutionBoard[r][c]) {
+                        isComplete = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isComplete) {
+                userStats.puzzlesSolved++;
+                saveUserStats();
+                const winMsg = translations[currentLang].winMsg;
+                setTimeout(() => {
+                    alert(winMsg);
+                }, 200);
+            }
+        }
+
+        function updateInspectWord(wordObj) {
+            if (!wordObj) return;
+            document.getElementById('vocabWord').innerText = wordObj.full;
+            document.getElementById('vocabPos').innerText = wordObj.pos;
+            document.getElementById('vocabDef').innerText = wordObj.def;
+            document.getElementById('vocabExample').innerText = `"${wordObj.example}"`;
+            document.getElementById('vocabEmojiBadge').innerText = wordObj.emoji || '✨';
+
+            drawWordIllustration(wordObj);
+        }
+
+        function drawWordIllustration(wordObj) {
+            const canvas = document.getElementById('illustrationCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = 40;
+            const h = canvas.height = 40;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(20, 20, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            const artType = wordObj.art || 'star';
+
+            if (artType === 'clock') {
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(20, 20, 13, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#f8fafc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(20, 20);
+                ctx.lineTo(20, 11);
+                ctx.moveTo(20, 20);
+                ctx.lineTo(28, 20);
+                ctx.stroke();
+            } else if (artType === 'tree') {
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(20, 16, 11, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(18, 24, 4, 10);
+            } else if (artType === 'book' || artType === 'paper') {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(11, 11, 18, 18);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(14, 14, 12, 2);
+                ctx.fillRect(14, 18, 9, 2);
+                ctx.fillRect(14, 22, 11, 2);
+            } else if (artType === 'chart') {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(10, 25, 4, 8);
+                ctx.fillRect(16, 18, 4, 15);
+                ctx.fillRect(22, 13, 4, 20);
+                ctx.fillRect(28, 9, 4, 24);
+            } else {
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(wordObj.emoji || '✨', 20, 20);
+            }
+        }
+
+        function eraseSelectedCell() {
+            if (selectedCellIndex === null) return;
+            const r = Math.floor(selectedCellIndex / 9);
+            const c = selectedCellIndex % 9;
+            if (givenBoard[r][c]) return;
+
+            currentBoard[r][c] = 0;
+            notesBoard[r][c] = 0;
+            renderGrid();
+            selectCell(r, c);
+            updateStatsUI();
+            saveGameState();
+        }
+
+        // HINT SYSTEM: RESTRICTED TO A MAXIMUM OF 3 HINTS PER GAME
+        function giveHint() {
+            const t = translations[currentLang];
+
+            if (hintsRemaining <= 0) {
+                alert(t.noHintsLeft);
+                return;
+            }
+
+            if (selectedCellIndex === null) {
+                alert(t.selectCellForHint);
+                return;
+            }
+
+            const r = Math.floor(selectedCellIndex / 9);
+            const c = selectedCellIndex % 9;
+
+            if (givenBoard[r][c]) return;
+
+            // Apply hint only if cell is empty or incorrect
+            if (currentBoard[r][c] !== solutionBoard[r][c]) {
+                hintsRemaining--;
+                currentBoard[r][c] = solutionBoard[r][c];
+                notesBoard[r][c] = 0;
+                
+                updateHintButtonText();
+                renderGrid();
+                selectCell(r, c);
+                updateStatsUI();
+                saveGameState();
+            }
+        }
+
+        function undoMove() {
+            if (historyStack.length > 0) {
+                const prev = historyStack.pop();
+                currentBoard = prev.board;
+                notesBoard = prev.notes || Array(9).fill(0).map(() => Array(9).fill(0));
+                renderGrid();
+                updateStatsUI();
+                saveGameState();
+            }
+        }
+
+        function toggleNotesBtn() {
+            isNotesActive = !isNotesActive;
+            document.getElementById('notesToggle').checked = isNotesActive;
+            syncNotesToggleState();
+        }
+
+        function syncNotesToggleState() {
+            isNotesActive = document.getElementById('notesToggle').checked;
+            const btnDesk = document.getElementById('notesBtnDesktop');
+            const btnMob = document.getElementById('notesBtnMobile');
+
+            [btnDesk, btnMob].forEach(btn => {
+                if (btn) {
+                    if (isNotesActive) {
+                        btn.classList.add('bg-purple-600', 'text-white', 'border-purple-400');
+                    } else {
+                        btn.classList.remove('bg-purple-600', 'text-white', 'border-purple-400');
+                    }
+                }
+            });
+        }
+
+        function changeTopic() {
+            currentTopicKey = document.getElementById('topicSelect').value;
+            newGame();
+        }
+
+        function startTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            const timerEl = document.getElementById('timerText');
+            if (timerEl) {
+                timerEl.innerText = `${mins}:${secs}`;
+            }
+        }
+
+        function saveGameState() {
+            const state = {
+                currentTopicKey,
+                currentDifficulty,
+                currentBoard,
+                notesBoard,
+                solutionBoard,
+                givenBoard,
+                mistakes,
+                hintsRemaining,
+                secondsElapsed,
+                checkErrors: document.getElementById('checkErrorsToggle').checked
+            };
+            localStorage.setItem('vocab_sudoku_game_state', JSON.stringify(state));
+        }
+
+        function loadGameState() {
+            const saved = localStorage.getItem('vocab_sudoku_game_state');
+            if (!saved) return false;
+            try {
+                const state = JSON.parse(saved);
+                currentTopicKey = state.currentTopicKey;
+                currentDifficulty = state.currentDifficulty;
+                currentBoard = state.currentBoard;
+                notesBoard = state.notesBoard || Array(9).fill(0).map(() => Array(9).fill(0));
+                solutionBoard = state.solutionBoard;
+                givenBoard = state.givenBoard;
+                mistakes = state.mistakes || 0;
+                hintsRemaining = state.hintsRemaining !== undefined ? state.hintsRemaining : 3;
+                secondsElapsed = state.secondsElapsed || 0;
+                
+                document.getElementById('topicSelect').value = currentTopicKey;
+                document.getElementById('checkErrorsToggle').checked = state.checkErrors;
+                
+                setDifficultyUIOnly(currentDifficulty);
+                renderGrid();
+                renderWordSelector();
+                updateHintButtonText();
+                startTimer();
+                updateInspectWord(topics[currentTopicKey][0]);
+                updateStatsUI();
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function setDifficultyUIOnly(level) {
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.add('opacity-60');
+                btn.classList.remove('bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'text-white');
+            });
+
+            const targetBtn = document.getElementById(`diffBtn${level.charAt(0).toUpperCase() + level.slice(1)}`);
+            if (targetBtn) {
+                targetBtn.classList.remove('opacity-60');
+                if (level === 'easy') targetBtn.classList.add('bg-emerald-600', 'text-white');
+                if (level === 'medium') targetBtn.classList.add('bg-amber-600', 'text-white');
+                if (level === 'hard') targetBtn.classList.add('bg-rose-600', 'text-white');
+            }
+        }
+
+        function loadUserStats() {
+            const stored = localStorage.getItem('vocab_sudoku_user_stats');
+            if (stored) {
+                try {
+                    userStats = JSON.parse(stored);
+                } catch (e) {}
+            }
+
+            const today = new Date().toDateString();
+            if (userStats.lastPlayedDate !== today) {
+                const lastDate = new Date(userStats.lastPlayedDate);
+                const diffTime = Math.abs(new Date() - lastDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    userStats.streakDays++;
+                } else if (diffDays > 1) {
+                    userStats.streakDays = 1;
+                }
+                userStats.lastPlayedDate = today;
+                saveUserStats();
+            }
+
+            updateStatsUI();
+        }
+
+        function saveUserStats() {
+            localStorage.setItem('vocab_sudoku_user_stats', JSON.stringify(userStats));
+            updateStatsUI();
+        }
+
+        function recordMasteredWord(wordKey) {
+            if (!userStats.masteredWordIds.includes(wordKey)) {
+                userStats.masteredWordIds.push(wordKey);
+                saveUserStats();
+            }
+        }
+
+        function updateStatsUI() {
+            let filledCount = 0;
+            if (currentBoard && currentBoard.length === 9) {
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        if (currentBoard[r][c] > 0) filledCount++;
+                    }
+                }
+            }
+
+            const totalCells = 81;
+            const remainingCount = totalCells - filledCount;
+            const completionPercent = Math.round((filledCount / totalCells) * 100);
+
+            const masteredCount = userStats.masteredWordIds.length;
+            const t = translations[currentLang];
+
+            const percentEl = document.getElementById('boardCompletionPercent');
+            if (percentEl) percentEl.innerText = `${completionPercent}%`;
+
+            const filledEl = document.getElementById('statFilledCount');
+            if (filledEl) filledEl.innerText = filledCount;
+
+            const masteredEl = document.getElementById('statMasteredCount');
+            if (masteredEl) masteredEl.innerText = `${masteredCount}`;
+
+            const streakEl = document.getElementById('statStreakCount');
+            if (streakEl) streakEl.innerText = `${userStats.streakDays} ${t.streakUnit}`;
+
+            if (statsChartObj && statsChartObj.data) {
+                statsChartObj.data.datasets[0].data = [filledCount, remainingCount];
+                statsChartObj.update();
+            }
+        }
+
+        function initChart() {
+            const canvas = document.getElementById('statsChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            
+            const ctx = canvas.getContext('2d');
+            const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+
+            statsChartObj = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Filled', 'Empty'],
+                    datasets: [{
+                        data: [0, 81],
+                        backgroundColor: ['#10b981', '#334155'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 8,
+                                font: { size: 9, family: 'Plus Jakarta Sans', weight: 'bold' },
+                                color: getThemeTextColor(currentTheme)
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            updateStatsUI();
+        }
+    </script>
+</body>
+</html>
+```eod
+
+### Chi tiết các nâng cấp:
+
+1. **Giới hạn 3 lần gợi ý:**
+   - Mỗi ván chơi sẽ có bộ đếm `hintsRemaining = 3`.
+   - Nút gợi ý hiển thị trực quan số lượt còn lại: `Gợi ý (3/3)`, `Gợi ý (2/3)`, `Gợi ý (1/3)` và `Gợi ý (0/3)`.
+   - Báo thông báo khi hết lượt gợi ý hoặc chưa chọn ô cần gợi ý. Tự động khôi phục đủ 3 lượt khi chọn "Ván Mới".
+
+2. **Cảnh báo ô sai bằng viền màu đỏ nổi bật:**
+   - Khi bật chế độ **"Kiểm Tra Lỗi (Viền Đỏ)"**, bất kỳ ô nào điền sai đáp án sẽ hiển thị **viền đỏ đậm 2px**, phủ bóng đỏ mềm và nền màu đỏ nổi bật.
+   - Khi tắt công tắc "Kiểm Tra Lỗi", viền đỏ sẽ tự động ẩn đi.
