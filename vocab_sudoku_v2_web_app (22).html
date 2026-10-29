@@ -144,6 +144,41 @@
             color: var(--text-main);
         }
 
+        /* AI TUTOR CHAT (OMNIROUTE) */
+        #chatPanel {
+            position: fixed;
+            right: 1rem;
+            bottom: 5rem;
+            width: min(380px, calc(100vw - 2rem));
+            height: min(560px, calc(100vh - 7rem));
+            z-index: 60;
+        }
+        #chatPanel input, #chatPanel textarea {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .chat-msg {
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-width: 85%;
+        }
+        .chat-msg-user {
+            background-color: var(--accent);
+            color: #ffffff;
+            margin-left: auto;
+        }
+        .chat-msg-assistant {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .chat-msg-error {
+            background-color: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.6);
+            color: var(--text-main);
+        }
+
         /* DYNAMIC THEME SYNCHRONIZED RULE CARDS & TEXT */
         .rule-card {
             background-color: var(--rule-box-bg) !important;
@@ -668,6 +703,49 @@
 
     </div>
 
+    <!-- AI TUTOR CHAT (POWERED BY OMNIROUTE) -->
+    <button onclick="toggleChat()" id="chatToggleBtn" class="fixed right-4 bottom-4 z-[60] px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-500/30 transition-transform hover:scale-105 flex items-center gap-2">
+        <i class="fa-solid fa-comments"></i> <span id="uiChatToggle">AI Tutor</span>
+    </button>
+
+    <div id="chatPanel" class="custom-panel shadow-2xl hidden flex-col overflow-hidden">
+        <div class="flex justify-between items-center px-3 py-2.5 border-b" style="border-color: var(--border-color);">
+            <div>
+                <h3 id="uiChatTitle" class="text-sm font-black flex items-center gap-1.5"><i class="fa-solid fa-robot text-emerald-500"></i> AI Tutor</h3>
+                <p id="chatStatus" class="text-[10px] opacity-70">OmniRoute</p>
+            </div>
+            <div class="flex items-center gap-1">
+                <button onclick="toggleChatSettings()" id="chatSettingsBtn" class="w-7 h-7 rounded-lg hover:bg-slate-500/20 flex items-center justify-center" title="Settings"><i class="fa-solid fa-gear text-xs"></i></button>
+                <button onclick="clearChat()" id="chatClearBtn" class="w-7 h-7 rounded-lg hover:bg-slate-500/20 flex items-center justify-center" title="Clear"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                <button onclick="toggleChat()" class="w-7 h-7 rounded-lg hover:bg-slate-500/20 flex items-center justify-center" title="Close"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+        </div>
+
+        <div id="chatSettings" class="hidden px-3 py-2.5 space-y-1.5 border-b text-[11px]" style="border-color: var(--border-color);">
+            <label class="block font-bold opacity-80" for="chatBaseUrl" id="uiChatBaseUrl">OmniRoute URL</label>
+            <input id="chatBaseUrl" type="url" class="w-full px-2 py-1.5 rounded-lg outline-none" placeholder="http://localhost:20128/v1">
+            <label class="block font-bold opacity-80" for="chatApiKey" id="uiChatApiKey">API Key</label>
+            <input id="chatApiKey" type="password" class="w-full px-2 py-1.5 rounded-lg outline-none" placeholder="sk-..." autocomplete="off">
+            <label class="block font-bold opacity-80" for="chatModel" id="uiChatModel">Model</label>
+            <input id="chatModel" type="text" class="w-full px-2 py-1.5 rounded-lg outline-none" placeholder="auto">
+            <button onclick="saveChatSettings()" id="uiChatSave" class="w-full mt-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black">Save</button>
+            <p id="uiChatSettingsHint" class="opacity-70 leading-snug"></p>
+        </div>
+
+        <div id="chatMessages" class="flex-1 overflow-y-auto px-3 py-2.5 space-y-2 text-xs"></div>
+
+        <div class="px-3 pt-1.5 flex flex-wrap gap-1">
+            <button onclick="sendQuickPrompt('explain')" id="uiChatQuickExplain" class="custom-card px-2 py-1 text-[10px] font-bold hover:opacity-80">Explain word</button>
+            <button onclick="sendQuickPrompt('quiz')" id="uiChatQuickQuiz" class="custom-card px-2 py-1 text-[10px] font-bold hover:opacity-80">Quiz me</button>
+            <button onclick="sendQuickPrompt('sentences')" id="uiChatQuickSentences" class="custom-card px-2 py-1 text-[10px] font-bold hover:opacity-80">More examples</button>
+        </div>
+
+        <form onsubmit="event.preventDefault(); sendChatMessage();" class="flex items-end gap-1.5 p-3">
+            <textarea id="chatInput" rows="1" class="flex-1 resize-none px-2.5 py-2 rounded-xl outline-none text-xs" placeholder="Ask about a word..." onkeydown="handleChatKeydown(event)"></textarea>
+            <button type="submit" id="chatSendBtn" class="w-9 h-9 shrink-0 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+        </form>
+    </div>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
         const translations = {
@@ -898,6 +976,15 @@
         let historyStack = [];
         let statsChartObj = null;
 
+        // AI TUTOR CHAT (OMNIROUTE) STATE
+        const CHAT_DEFAULT_SETTINGS = { baseUrl: 'http://localhost:20128/v1', apiKey: '', model: 'auto' };
+        const CHAT_HISTORY_LIMIT = 30;
+        let chatSettings = { ...CHAT_DEFAULT_SETTINGS };
+        let chatHistory = [];
+        let chatContextWord = null;
+        let isChatBusy = false;
+        let chatAbortController = null;
+
         // SINGLE-FLIGHT SPEECH SYNTHESIS ENGINE
         let androidVoicesList = [];
         let isAudioContextUnlocked = false;
@@ -921,6 +1008,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            initChat();
             initLanguage();
             initTheme();
             loadMuteState();
@@ -1075,6 +1163,7 @@
             }
 
             updateUIWithTranslations();
+            updateChatTranslations();
         }
 
         function initLanguage() {
@@ -1570,6 +1659,7 @@
 
         function updateInspectWord(wordObj) {
             if (!wordObj) return;
+            chatContextWord = wordObj;
             document.getElementById('vocabWord').innerText = wordObj.full;
             document.getElementById('vocabPos').innerText = wordObj.pos;
             document.getElementById('vocabDef').innerText = wordObj.def;
@@ -1917,6 +2007,311 @@
             });
 
             updateStatsUI();
+        }
+
+        // ==========================================
+        // AI TUTOR CHAT — OMNIROUTE (OpenAI-compatible /v1/chat/completions)
+        // ==========================================
+        const chatTranslations = {
+            vi: {
+                toggle: "Gia Sư AI",
+                title: "Gia Sư AI",
+                baseUrl: "Địa chỉ OmniRoute",
+                apiKey: "API Key OmniRoute",
+                model: "Model",
+                save: "Lưu",
+                saved: "Đã lưu cài đặt.",
+                settingsHint: "Chạy OmniRoute (npx omniroute) rồi tạo API key trong dashboard. Nếu mở game từ trang web khác, thêm địa chỉ trang đó vào CORS_ALLOWED_ORIGINS của OmniRoute.",
+                placeholder: "Hỏi về một từ vựng...",
+                quickExplain: "Giải thích từ",
+                quickQuiz: "Đố tôi",
+                quickSentences: "Thêm ví dụ",
+                promptExplain: "Hãy giải thích từ \"{word}\": nghĩa tiếng Việt, cách phát âm, từ đồng nghĩa và cách dùng.",
+                promptQuiz: "Hãy đố tôi một câu trắc nghiệm ngắn về các từ trong chủ đề này.",
+                promptSentences: "Cho tôi 3 câu ví dụ mới với từ \"{word}\".",
+                welcome: "Xin chào! Mình là gia sư AI. Chọn một ô trên lưới rồi hỏi mình về từ đó nhé.",
+                thinking: "Đang trả lời...",
+                ready: "Sẵn sàng · {model}",
+                notConfigured: "Chưa cấu hình — bấm ⚙️",
+                needKey: "Hãy nhập API key OmniRoute trong phần cài đặt (⚙️).",
+                networkError: "Không kết nối được tới OmniRoute tại {url}. Kiểm tra OmniRoute đang chạy và CORS_ALLOWED_ORIGINS có chứa địa chỉ trang này.",
+                httpError: "OmniRoute trả lỗi {status}: {detail}",
+                clearConfirm: "Xóa toàn bộ cuộc trò chuyện?"
+            },
+            en: {
+                toggle: "AI Tutor",
+                title: "AI Tutor",
+                baseUrl: "OmniRoute URL",
+                apiKey: "OmniRoute API Key",
+                model: "Model",
+                save: "Save",
+                saved: "Settings saved.",
+                settingsHint: "Run OmniRoute (npx omniroute) and create an API key in its dashboard. If you open the game from another website, add that site's origin to OmniRoute's CORS_ALLOWED_ORIGINS.",
+                placeholder: "Ask about a word...",
+                quickExplain: "Explain word",
+                quickQuiz: "Quiz me",
+                quickSentences: "More examples",
+                promptExplain: "Explain the word \"{word}\": meaning, pronunciation, synonyms and usage.",
+                promptQuiz: "Give me one short multiple-choice quiz question about the words in this topic.",
+                promptSentences: "Give me 3 new example sentences using \"{word}\".",
+                welcome: "Hi! I'm your AI tutor. Select a cell on the grid, then ask me about that word.",
+                thinking: "Answering...",
+                ready: "Ready · {model}",
+                notConfigured: "Not configured — tap ⚙️",
+                needKey: "Enter your OmniRoute API key in settings (⚙️).",
+                networkError: "Could not reach OmniRoute at {url}. Check that OmniRoute is running and that CORS_ALLOWED_ORIGINS includes this page's origin.",
+                httpError: "OmniRoute returned {status}: {detail}",
+                clearConfirm: "Clear the whole conversation?"
+            }
+        };
+
+        function chatT(key, vars = {}) {
+            const dict = chatTranslations[currentLang] || chatTranslations.en;
+            return dict[key].replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '');
+        }
+
+        function initChat() {
+            try {
+                const savedSettings = JSON.parse(localStorage.getItem('vocab_sudoku_chat_settings') || 'null');
+                if (savedSettings) chatSettings = { ...CHAT_DEFAULT_SETTINGS, ...savedSettings };
+                const savedHistory = JSON.parse(localStorage.getItem('vocab_sudoku_chat_history') || '[]');
+                if (Array.isArray(savedHistory)) chatHistory = savedHistory.slice(-CHAT_HISTORY_LIMIT);
+            } catch (e) {
+                console.warn('Failed to load chat state:', e);
+            }
+
+            document.getElementById('chatBaseUrl').value = chatSettings.baseUrl;
+            document.getElementById('chatApiKey').value = chatSettings.apiKey;
+            document.getElementById('chatModel').value = chatSettings.model;
+        }
+
+        function updateChatTranslations() {
+            document.getElementById('uiChatToggle').innerText = chatT('toggle');
+            document.getElementById('uiChatTitle').innerHTML = `<i class="fa-solid fa-robot text-emerald-500"></i> ${chatT('title')}`;
+            document.getElementById('uiChatBaseUrl').innerText = chatT('baseUrl');
+            document.getElementById('uiChatApiKey').innerText = chatT('apiKey');
+            document.getElementById('uiChatModel').innerText = chatT('model');
+            document.getElementById('uiChatSave').innerText = chatT('save');
+            document.getElementById('uiChatSettingsHint').innerText = chatT('settingsHint');
+            document.getElementById('uiChatQuickExplain').innerText = chatT('quickExplain');
+            document.getElementById('uiChatQuickQuiz').innerText = chatT('quickQuiz');
+            document.getElementById('uiChatQuickSentences').innerText = chatT('quickSentences');
+            document.getElementById('chatInput').placeholder = chatT('placeholder');
+            updateChatStatus();
+            renderChatMessages();
+        }
+
+        function updateChatStatus(text) {
+            const status = document.getElementById('chatStatus');
+            if (text) {
+                status.innerText = text;
+            } else if (!chatSettings.apiKey) {
+                status.innerText = chatT('notConfigured');
+            } else {
+                status.innerText = chatT('ready', { model: chatSettings.model || 'auto' });
+            }
+        }
+
+        function toggleChat() {
+            const panel = document.getElementById('chatPanel');
+            const isOpening = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !isOpening);
+            panel.classList.toggle('flex', isOpening);
+            if (isOpening) {
+                if (!chatSettings.apiKey) {
+                    document.getElementById('chatSettings').classList.remove('hidden');
+                }
+                renderChatMessages();
+                document.getElementById('chatInput').focus();
+            }
+        }
+
+        function toggleChatSettings() {
+            document.getElementById('chatSettings').classList.toggle('hidden');
+        }
+
+        function saveChatSettings() {
+            chatSettings = {
+                baseUrl: document.getElementById('chatBaseUrl').value.trim().replace(/\/+$/, '') || CHAT_DEFAULT_SETTINGS.baseUrl,
+                apiKey: document.getElementById('chatApiKey').value.trim(),
+                model: document.getElementById('chatModel').value.trim() || CHAT_DEFAULT_SETTINGS.model
+            };
+            document.getElementById('chatBaseUrl').value = chatSettings.baseUrl;
+            document.getElementById('chatModel').value = chatSettings.model;
+            localStorage.setItem('vocab_sudoku_chat_settings', JSON.stringify(chatSettings));
+            document.getElementById('chatSettings').classList.add('hidden');
+            updateChatStatus(chatT('saved'));
+            setTimeout(() => updateChatStatus(), 1500);
+        }
+
+        function clearChat() {
+            if (chatHistory.length && !confirm(chatT('clearConfirm'))) return;
+            if (chatAbortController) chatAbortController.abort();
+            chatHistory = [];
+            saveChatHistory();
+            renderChatMessages();
+        }
+
+        function saveChatHistory() {
+            chatHistory = chatHistory.slice(-CHAT_HISTORY_LIMIT);
+            localStorage.setItem('vocab_sudoku_chat_history', JSON.stringify(chatHistory));
+        }
+
+        function renderChatMessages() {
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+
+            const messages = chatHistory.length ? chatHistory : [{ role: 'assistant', content: chatT('welcome') }];
+            messages.forEach(msg => {
+                const bubble = document.createElement('div');
+                const roleClass = msg.error ? 'chat-msg-error' : (msg.role === 'user' ? 'chat-msg-user' : 'chat-msg-assistant');
+                bubble.className = `chat-msg ${roleClass} px-2.5 py-1.5 rounded-xl leading-relaxed`;
+                bubble.textContent = msg.content || (msg.pending ? chatT('thinking') : '');
+                container.appendChild(bubble);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleChatKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        function sendQuickPrompt(kind) {
+            const word = chatContextWord ? chatContextWord.full : document.getElementById('vocabWord').innerText;
+            const promptKey = { explain: 'promptExplain', quiz: 'promptQuiz', sentences: 'promptSentences' }[kind];
+            sendChatMessage(chatT(promptKey, { word }));
+        }
+
+        function buildChatSystemPrompt() {
+            const topicSelect = document.getElementById('topicSelect');
+            const topicLabel = topicSelect.selectedOptions[0] ? topicSelect.selectedOptions[0].text : currentTopicKey;
+            const wordList = topics[currentTopicKey].map(w => `${w.full} (${w.pos}): ${w.def}`).join('\n');
+            const replyLanguage = currentLang === 'vi'
+                ? 'Reply in Vietnamese, keeping English words and example sentences in English.'
+                : 'Reply in simple, clear English.';
+
+            let prompt = `You are a friendly English vocabulary tutor inside "Vocab Sudoku", a game where learners fill a 9x9 Sudoku grid with English words. ${replyLanguage} Keep answers short (under 150 words), use plain text without markdown tables, and adapt to the learner's level.\n\nCurrent level/topic: ${topicLabel}\nWords in this puzzle:\n${wordList}`;
+            if (chatContextWord) {
+                prompt += `\n\nThe learner is currently looking at the word "${chatContextWord.full}" (${chatContextWord.pos}): ${chatContextWord.def} Example: "${chatContextWord.example}"`;
+            }
+            prompt += `\n\nDo not reveal where words go on the Sudoku grid; you cannot see the board.`;
+            return prompt;
+        }
+
+        async function sendChatMessage(presetText) {
+            const input = document.getElementById('chatInput');
+            const text = (presetText ?? input.value).trim();
+            if (!text || isChatBusy) return;
+
+            if (!chatSettings.apiKey) {
+                document.getElementById('chatSettings').classList.remove('hidden');
+                chatHistory.push({ role: 'assistant', content: chatT('needKey'), error: true });
+                renderChatMessages();
+                chatHistory.pop();
+                return;
+            }
+
+            input.value = '';
+            chatHistory = chatHistory.filter(m => !m.error);
+            chatHistory.push({ role: 'user', content: text });
+            const reply = { role: 'assistant', content: '', pending: true };
+            chatHistory.push(reply);
+            renderChatMessages();
+
+            isChatBusy = true;
+            document.getElementById('chatSendBtn').disabled = true;
+            updateChatStatus(chatT('thinking'));
+            chatAbortController = new AbortController();
+
+            const apiMessages = [
+                { role: 'system', content: buildChatSystemPrompt() },
+                ...chatHistory.filter(m => m !== reply && !m.error).map(m => ({ role: m.role, content: m.content }))
+            ];
+
+            try {
+                const response = await fetch(`${chatSettings.baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${chatSettings.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: chatSettings.model || 'auto',
+                        messages: apiMessages,
+                        stream: true,
+                        temperature: 0.7
+                    }),
+                    signal: chatAbortController.signal
+                });
+
+                if (!response.ok) {
+                    let detail = response.statusText;
+                    try {
+                        const errBody = await response.json();
+                        detail = (errBody.error && (errBody.error.message || errBody.error)) || errBody.message || detail;
+                    } catch (e) { /* non-JSON error body */ }
+                    throw { httpStatus: response.status, detail: String(detail) };
+                }
+
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('text/event-stream') && response.body) {
+                    await readChatStream(response.body, reply);
+                } else {
+                    const data = await response.json();
+                    reply.content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+                }
+                reply.pending = false;
+            } catch (err) {
+                const replyIndex = chatHistory.indexOf(reply);
+                if (replyIndex !== -1) chatHistory.splice(replyIndex, 1);
+                if (err && err.name === 'AbortError') {
+                    // Conversation cleared mid-request.
+                } else if (err && err.httpStatus) {
+                    chatHistory.push({ role: 'assistant', content: chatT('httpError', { status: err.httpStatus, detail: err.detail }), error: true });
+                } else {
+                    chatHistory.push({ role: 'assistant', content: chatT('networkError', { url: chatSettings.baseUrl }), error: true });
+                }
+            } finally {
+                isChatBusy = false;
+                chatAbortController = null;
+                document.getElementById('chatSendBtn').disabled = false;
+                if (reply.pending === false && !reply.content) reply.content = '…';
+                saveChatHistory();
+                renderChatMessages();
+                updateChatStatus();
+            }
+        }
+
+        async function readChatStream(body, reply) {
+            const reader = body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith('data:')) continue;
+                    const payload = trimmed.slice(5).trim();
+                    if (payload === '[DONE]') return;
+                    try {
+                        const chunk = JSON.parse(payload);
+                        const delta = chunk.choices && chunk.choices[0] && chunk.choices[0].delta;
+                        if (delta && delta.content) {
+                            reply.content += delta.content;
+                            renderChatMessages();
+                        }
+                    } catch (e) { /* ignore keep-alive or partial lines */ }
+                }
+            }
         }
     </script>
 </body>
